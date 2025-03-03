@@ -30,6 +30,7 @@ class Shape(ABC):
 
     def update2dCoords(self):
         self.TwoDimensionalCoords = [(i[0] * FOV / (i[2] + FOV), i[1] * FOV / (i[2] + FOV)) for i in self.coords]
+        self.avZ = [sum(self.coords[ii][-1] for ii in i) / len(i) for i in self.faces]
     def rotateCoords(self,axis: str,  angle:int|float,  center=None,  coords=None):
         if coords is None:
             coords = self.coords
@@ -116,8 +117,10 @@ c=Cube(
 )
 #c.display()
 while True:
-    clear_console()
+    print()
+    print()
+    print()
     c.display()
     c.rotateCoords('y',5)
     c.update2dCoords()
-    sleep(0.1)
+    sleep(0.5)
