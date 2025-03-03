@@ -1,3 +1,4 @@
+import random
 from abc import ABC, abstractmethod
 import math
 import os
@@ -5,7 +6,7 @@ def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
 from time import sleep
 
-FOV = 30
+FOV = 15
 symbols = tuple(i+str(idx)+"\033[0m" for idx,i in enumerate(("\033[0;31m", "\033[0;32m", "\033[0;34m", "\033[1;33m", "\033[0;36m", "\033[1;35m")))
 
 def sin(deg: int|float) -> float:
@@ -42,14 +43,39 @@ class Shape(ABC):
         indices = {0,1,2}
         indices.remove({'x':0,'y':1,'z':2}[axis])
         for idx,triple in enumerate(returnCoords):
+            x = triple[0]
+            y = triple[1]
+            z = triple[2]
+            c1 = center[0]
+            c2 = center[1]
+            c3 = center[2]
+
+            if 0 not in indices:
+                #Rotation Matrix about X axis
+                #
+                #|     1      0          0      |
+                #|     0  cos(angle) -sin(angle)|
+                #|     0  sin(angle) cos(angle) |
+                returnCoords[idx][1] = (y-c2)*cos(angle) + (z-c3)*-sin(angle) + c2 #y
+                returnCoords[idx][2] = (y-c2)*sin(angle) + (z-c3)*cos(angle) + c3 #z
             if 1 not in indices:
-                x=triple[0]
-                z=triple[2]
-                c1 = center[0]
-                c2=center[2]
-                #print(f"{x=} {z=} {c1=} {c2=}")
-                returnCoords[idx][0] = (x-c1)*cos(angle) + (z-c2)*sin(angle) + c1 #x
-                returnCoords[idx][2] = -(x-c1)*sin(angle) + (z-c2)*cos(angle) + c2 #z
+                #Rotation Matrix about Y axis
+                #
+                #| cos(angle) 0 sin(angle) |
+                #|     0      1     0      |
+                #|-sin(angle) 0 cos(angle) |
+                returnCoords[idx][0] = (x-c1)*cos(angle) + (z-c3)*sin(angle) + c1 #x
+                returnCoords[idx][2] = -(x-c1)*sin(angle) + (z-c3)*cos(angle) + c3 #z
+            if 2 not in indices:
+                #Rotation Matrix about Z axis
+                #
+                #|cos(angle) sin(angle)   0      |
+                #|-sin(angle) cos(angle    0      |
+                #|     0        0         1      |
+                returnCoords[idx][0] = (x-c1)*cos(angle) + (y-c2)*sin(angle) + c1 #x
+                returnCoords[idx][1] = -(x-c1)*sin(angle) + (y-c2)*cos(angle) + c2 #y
+
+
         self.coords= returnCoords
 
 
@@ -59,9 +85,11 @@ class Cube(Shape):
     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None,symbols=symbols):
         super().__init__(coords, faces)
     def display(self):
-        for y in (i * 0.3 for i in range(-10, 10)):
+        yScale = 10
+        xScale = 15
+        for y in (i * (3/yScale) for i in range(-yScale, yScale)):
             disp = ""
-            for x in (i * 0.3 for i in range(-10, 10)):
+            for x in (i * (3/xScale) for i in range(-xScale, xScale)):
                 front = []
                 for idx, face in enumerate(self.faces):
                     s = triArea(x, y, self.TwoDimensionalCoords[face[0]][0], self.TwoDimensionalCoords[face[0]][1],
@@ -89,8 +117,8 @@ class Cube(Shape):
                     continue
                 front.sort(key=lambda x: x[1])
                 disp += symbols[front[0][0]] + ' '
-            if disp.count(' ') != len(disp):
-                print(disp)
+            #if disp.count(' ') != len(disp):
+            print(disp)
     def cc(self):
         minx,maxx, miny,maxy, minz,maxz = [128,-128]*3
         for coord in self.coords:
@@ -121,6 +149,9 @@ while True:
     print()
     print()
     c.display()
-    c.rotateCoords('y',5)
+    c.rotateCoords('x',6)
+    c.rotateCoords('y', -math.pi)
+    c.rotateCoords('z', 1.5)
     c.update2dCoords()
-    sleep(0.5)
+    sleep(0.05)
+    os.system('cls')
