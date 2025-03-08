@@ -1,3 +1,3 @@
-WIP 3D rendering of a cube made fully within console.
-
-All the rendering stuff is done, I just need to implement rotation the cube so you can see the other sides
+3D rendering of a Cube made fully within the console.
+# #
+![](https://github.com/hdsjejgh/3dRenderer/blob/ca875315b1f2a599aa3a38c1eb67e07c2b39400b/media/cube.gif)
