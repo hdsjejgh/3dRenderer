@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 import math
 import os
+from decimal import Decimal, getcontext
+
+getcontext().prec = 30
 
 FOV = 15
 symbols = tuple(i+str(idx)+"\033[0m" for idx,i in enumerate(("\033[0;31m", "\033[0;32m", "\033[0;34m", "\033[1;33m", "\033[0;36m", "\033[1;35m"))) #what symbol to use for each face (the weird symbols are ansi color codes to add colors)
@@ -115,7 +118,7 @@ class Cube(Shape):
     def display(self):
         os.system('cls') #clears terminal
         #iterates through every pixel on grid
-        disp = ""
+        backbuffer = ""
         for y in (i * (3/Y_SCALE) for i in range(-Y_SCALE, Y_SCALE)):
 
             for x in (i * (3/X_SCALE) for i in range(-X_SCALE, X_SCALE)):
@@ -144,16 +147,16 @@ class Cube(Shape):
                     if round(area, 5) == round(s, 5): #if 2d point in 2d representation of 2d face
                         front.append((idx, self.avZ[idx]))
                 if len(front) == 0: #if point isnt on any face, add empty face
-                    disp += "  "
+                    backbuffer += "  "
                     continue
                 frontface = front[1]
                 for face in front:
                     if face[1]<frontface[1]:
                         frontface=face
-                disp += symbols[frontface[0]] + ' ' #adds symbol for frontmost face
+                backbuffer += symbols[frontface[0]] + ' ' #adds symbol for frontmost face
             #if disp.count(' ') != len(disp):
-            disp+='\n'
-        print(disp)
+            backbuffer+='\n'
+        print(backbuffer)
     def cc(self): #gets center of cube
         minx,maxx, miny,maxy, minz,maxz = [128,-128]*3
         for coord in self.coords:
@@ -167,8 +170,108 @@ class Cube(Shape):
             maxz = max(maxz, coord[2])
         return (minx+maxx)/2,(miny+maxy)/2,(minz+maxz)/2
 
+class OBJFile(Shape):
+    def __init__(self,filepath, *args, **kwargs):
+        self.coords = []
+        self.faces = []
+
+        with open(filepath, "r") as file:
+            for line in file:
+                try:
+                    line = line.split()
+                    if len(line)<1:
+                        continue
+                    print(line)
+                    type = line[0]
+
+                    if type == 'v':
+                        items = [float(line[i]) for i in range(1, 4)]
+                        self.coords.append(items)
+                    elif type == 'f':
+                        items = line[1:]
+                        items = list(map(lambda x: x.split('/'),items))
+                        face = []
+                        for i in items:
+                            face.append(int(i[0])-1)
+                        self.faces.append(face)
+                except Exception as e:
+                    print("ERROr")
+                    input(e)
+        print(self.coords)
+        self.TwoDimensionalCoords = [(i[0] * FOV / (i[2] + FOV), i[1] * FOV / (i[2] + FOV)) for i in self.coords]
+        self.avZ = [sum(self.coords[ii][-1] for ii in i) / len(i) for i in self.faces]
+        self.center = self.cc()
+    def cc(self): #gets center of cube
+        minx,maxx, miny,maxy, minz,maxz = [128,-128]*3
+        for coord in self.coords:
+            minx = min(minx,coord[0])
+            maxx = max(maxx, coord[0])
+
+            miny = min(miny, coord[1])
+            maxy = max(maxy, coord[1])
+
+            minz = min(minz, coord[2])
+            maxz = max(maxz, coord[2])
+        return (minx+maxx)/2,(miny+maxy)/2,(minz+maxz)/2
+
+    def display(self):
+        os.system('cls') #clears terminal
+        #iterates through every pixel on grid
+        backbuffer = ""
+        for y in (i * (3/Y_SCALE) for i in range(-Y_SCALE, Y_SCALE)):
+
+            for x in (i * (3/X_SCALE) for i in range(-X_SCALE, X_SCALE)):
+                front = []
+                for idx, face in enumerate(self.faces):
+                    #finds if point is in each face by summing area of triangle made by point and each 2 consecutive vertices
+                    #if sum of areas = area of quad, point in quad, else its outside of it
+                    s = triArea(x, y, self.TwoDimensionalCoords[face[0]][0], self.TwoDimensionalCoords[face[0]][1], #triangle made of point, and first and last vertices
+                                  self.TwoDimensionalCoords[face[-1]][0], self.TwoDimensionalCoords[face[-1]][1])
+                    for i in range(len(face)-1): #adds sum for other triangles
+                        x1 = x
+                        y1 = y
+                        x2 = self.TwoDimensionalCoords[face[i]][0]
+                        y2 = self.TwoDimensionalCoords[face[i]][1]
+                        x3 = self.TwoDimensionalCoords[face[i + 1]][0]
+                        y3 = self.TwoDimensionalCoords[face[i + 1]][1]
+                        s += triArea(x1, y1, x2, y2, x3, y3)
+
+                    x1, y1 = self.TwoDimensionalCoords[face[0]]
+                    x2, y2 = self.TwoDimensionalCoords[face[1]]
+                    x3, y3 = self.TwoDimensionalCoords[face[2]]
+                    area = triArea(x1, y1, x2, y2, x3, y3)
+
+                    # print(f"({x,y}) {area=} {s=} {idx=}")
+                    if round(area, 5) == round(s, 5): #if 2d point in 2d representation of 2d face
+                        front.append((idx, self.avZ[idx]))
+                if len(front) == 0: #if point isnt on any face, add empty face
+                    #print(s, area, y)
+                    #print(self.TwoDimensionalCoords[face[i]][0],self.TwoDimensionalCoords[face[i]][1], self.TwoDimensionalCoords[face[i+1]][0], self.TwoDimensionalCoords[face[i+1]][1])
+
+                    backbuffer += "  "
+                    continue
+                frontface = front[1]
+
+                for face in front:
+                    if face[1]<frontface[1]:
+                        frontface=face
+                backbuffer += symbols[frontface[0]%len(symbols)] + ' ' #adds symbol for frontmost face
+            #if disp.count(' ') != len(disp):
+            backbuffer+='\n'
+        print(backbuffer)
+
+
 def triArea(x1,y1,x2,y2,x3,y3): #area of a triangle using 3 coordinate pairs
-    return (1 / 2) * abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
+    x1 = Decimal(x1)
+    x2 = Decimal(x2)
+    x3 = Decimal(x3)
+
+    y1 = Decimal(y1)
+    y2 = Decimal(y2)
+    y3 = Decimal(y3)
+
+
+    return Decimal('0.5') * abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
 
 def quadArea(x1,y1,x2,y2,x3,y3,x4,y4): #area of a quadrilateral using 4 coordinate pairs
     return 1/2 * abs((x1*y2 + x2*y3 + x3*y4 + x4*y1) - (x2*y1 + x3*y2 + x4*y3 + x1*y4))
