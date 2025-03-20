@@ -1,14 +1,10 @@
 from abc import ABC, abstractmethod
 import math
-import os
-from decimal import Decimal, getcontext
+#from main import FOV
 
-getcontext().prec = 30
-
-FOV = 15
+FOV = 150
 symbols = tuple(i+str(idx)+"\033[0m" for idx,i in enumerate(("\033[0;31m", "\033[0;32m", "\033[0;34m", "\033[1;33m", "\033[0;36m", "\033[1;35m"))) #what symbol to use for each face (the weird symbols are ansi color codes to add colors)
-X_SCALE = 15
-Y_SCALE = 10
+
 
 def sin(deg: int|float) -> float: #sine function for degrees
     return math.sin((deg*math.pi)/180)
@@ -26,12 +22,8 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
     @abstractmethod
     def cc(self): #function for center coordinate, different for each shape
         pass
-    @abstractmethod
-    def display(self): #function for displayed shape, different for each shape
-        pass
-
-
     def update2dCoords(self): #updates 2d coords and avZ for after rotation
+        self.faces.sort(key = lambda x:sum(self.coords[x[i]][2] for i in range(len(x)))/len(x))
         self.TwoDimensionalCoords = [(i[0] * FOV / (i[2] + FOV), i[1] * FOV / (i[2] + FOV)) for i in self.coords]
         self.avZ = [sum(self.coords[ii][-1] for ii in i) / len(i) for i in self.faces]
 
@@ -115,48 +107,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 class Cube(Shape):
     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None,):
         super().__init__(coords, faces)
-    def display(self):
-        os.system('cls') #clears terminal
-        #iterates through every pixel on grid
-        backbuffer = ""
-        for y in (i * (3/Y_SCALE) for i in range(-Y_SCALE, Y_SCALE)):
 
-            for x in (i * (3/X_SCALE) for i in range(-X_SCALE, X_SCALE)):
-                front = []
-                for idx, face in enumerate(self.faces):
-                    #finds if point is in each face by summing area of triangle made by point and each 2 consecutive vertices
-                    #if sum of areas = area of quad, point in quad, else its outside of it
-                    s = triArea(x, y, self.TwoDimensionalCoords[face[0]][0], self.TwoDimensionalCoords[face[0]][1], #triangle made of point, and first and last vertices
-                                  self.TwoDimensionalCoords[face[-1]][0], self.TwoDimensionalCoords[face[-1]][1])
-                    for i in range(3): #adds sum for other triangles
-                        x1 = x
-                        y1 = y
-                        x2 = self.TwoDimensionalCoords[face[i]][0]
-                        y2 = self.TwoDimensionalCoords[face[i]][1]
-                        x3 = self.TwoDimensionalCoords[face[i + 1]][0]
-                        y3 = self.TwoDimensionalCoords[face[i + 1]][1]
-                        s += triArea(x1, y1, x2, y2, x3, y3)
-
-                    x1, y1 = self.TwoDimensionalCoords[face[0]]
-                    x2, y2 = self.TwoDimensionalCoords[face[1]]
-                    x3, y3 = self.TwoDimensionalCoords[face[2]]
-                    x4, y4 = self.TwoDimensionalCoords[face[3]]
-                    area = quadArea(x1, y1, x2, y2, x3, y3, x4, y4)
-
-                    # print(f"({x,y}) {area=} {s=} {idx=}")
-                    if round(area, 5) == round(s, 5): #if 2d point in 2d representation of 2d face
-                        front.append((idx, self.avZ[idx]))
-                if len(front) == 0: #if point isnt on any face, add empty face
-                    backbuffer += "  "
-                    continue
-                frontface = front[1]
-                for face in front:
-                    if face[1]<frontface[1]:
-                        frontface=face
-                backbuffer += symbols[frontface[0]] + ' ' #adds symbol for frontmost face
-            #if disp.count(' ') != len(disp):
-            backbuffer+='\n'
-        print(backbuffer)
     def cc(self): #gets center of cube
         minx,maxx, miny,maxy, minz,maxz = [128,-128]*3
         for coord in self.coords:
@@ -214,64 +165,5 @@ class OBJFile(Shape):
             maxz = max(maxz, coord[2])
         return (minx+maxx)/2,(miny+maxy)/2,(minz+maxz)/2
 
-    def display(self):
-        os.system('cls') #clears terminal
-        #iterates through every pixel on grid
-        backbuffer = ""
-        for y in (i * (3/Y_SCALE) for i in range(-Y_SCALE, Y_SCALE)):
-
-            for x in (i * (3/X_SCALE) for i in range(-X_SCALE, X_SCALE)):
-                front = []
-                for idx, face in enumerate(self.faces):
-                    #finds if point is in each face by summing area of triangle made by point and each 2 consecutive vertices
-                    #if sum of areas = area of quad, point in quad, else its outside of it
-                    s = triArea(x, y, self.TwoDimensionalCoords[face[0]][0], self.TwoDimensionalCoords[face[0]][1], #triangle made of point, and first and last vertices
-                                  self.TwoDimensionalCoords[face[-1]][0], self.TwoDimensionalCoords[face[-1]][1])
-                    for i in range(len(face)-1): #adds sum for other triangles
-                        x1 = x
-                        y1 = y
-                        x2 = self.TwoDimensionalCoords[face[i]][0]
-                        y2 = self.TwoDimensionalCoords[face[i]][1]
-                        x3 = self.TwoDimensionalCoords[face[i + 1]][0]
-                        y3 = self.TwoDimensionalCoords[face[i + 1]][1]
-                        s += triArea(x1, y1, x2, y2, x3, y3)
-
-                    x1, y1 = self.TwoDimensionalCoords[face[0]]
-                    x2, y2 = self.TwoDimensionalCoords[face[1]]
-                    x3, y3 = self.TwoDimensionalCoords[face[2]]
-                    area = triArea(x1, y1, x2, y2, x3, y3)
-
-                    # print(f"({x,y}) {area=} {s=} {idx=}")
-                    if round(area, 5) == round(s, 5): #if 2d point in 2d representation of 2d face
-                        front.append((idx, self.avZ[idx]))
-                if len(front) == 0: #if point isnt on any face, add empty face
-                    #print(s, area, y)
-                    #print(self.TwoDimensionalCoords[face[i]][0],self.TwoDimensionalCoords[face[i]][1], self.TwoDimensionalCoords[face[i+1]][0], self.TwoDimensionalCoords[face[i+1]][1])
-
-                    backbuffer += "  "
-                    continue
-                frontface = front[1]
-
-                for face in front:
-                    if face[1]<frontface[1]:
-                        frontface=face
-                backbuffer += symbols[frontface[0]%len(symbols)] + ' ' #adds symbol for frontmost face
-            #if disp.count(' ') != len(disp):
-            backbuffer+='\n'
-        print(backbuffer)
 
 
-def triArea(x1,y1,x2,y2,x3,y3): #area of a triangle using 3 coordinate pairs
-    x1 = Decimal(x1)
-    x2 = Decimal(x2)
-    x3 = Decimal(x3)
-
-    y1 = Decimal(y1)
-    y2 = Decimal(y2)
-    y3 = Decimal(y3)
-
-
-    return Decimal('0.5') * abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-
-def quadArea(x1,y1,x2,y2,x3,y3,x4,y4): #area of a quadrilateral using 4 coordinate pairs
-    return 1/2 * abs((x1*y2 + x2*y3 + x3*y4 + x4*y1) - (x2*y1 + x3*y2 + x4*y3 + x1*y4))
