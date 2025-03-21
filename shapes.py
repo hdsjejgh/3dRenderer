@@ -120,6 +120,10 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
 class Cube(Shape):
     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None,):
+
+        assert len(coords) == 8, "Invalid vertex count"
+        assert len(faces) == 6, "Invalid face count"
+
         super().__init__(coords, faces)
 
     def cc(self): #gets center of cube
@@ -163,8 +167,7 @@ class OBJFile(Shape):
                     print("ERROr")
                     exit()
         #print(self.coords)
-        self.TwoDimensionalCoords = [(i[0] * FOV / (i[2] + FOV), i[1] * FOV / (i[2] + FOV)) for i in self.coords]
-        self.avZ = [sum(self.coords[ii][-1] for ii in i) / len(i) for i in self.faces]
+        self.faces = [self.face(self,self.faces[i],i) for i in range(len(self.faces))]
         self.center = self.cc()
     def cc(self): #gets center of cube
         minx,maxx, miny,maxy, minz,maxz = [128,-128]*3

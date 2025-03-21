@@ -5,14 +5,12 @@ import random
 from parameters import *
 
 
-
-
 c=Cube(
         coords=[[-2,2,2],[2,2,2],[2,-2,2],[-2,-2,2],[-2,2,6],[2,2,6],[2,-2,6],[-2,-2,6],],
          faces=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[2,3,7,6],]
     )
-#c=OBJFile("Shambler.obj")
-c.scaleCoords(-20.75)
+c=OBJFile("Shambler.obj")
+c.scaleCoords(-2.75)
 c.update2dCoords()
 
 def TransformationLoop():
