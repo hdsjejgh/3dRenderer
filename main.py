@@ -2,17 +2,17 @@ from time import sleep
 from shapes import *
 import pygame
 import random
+from parameters import *
 
-WIDTH=800
-HEIGHT=800
+
 
 
 c=Cube(
         coords=[[-2,2,2],[2,2,2],[2,-2,2],[-2,-2,2],[-2,2,6],[2,2,6],[2,-2,6],[-2,-2,6],],
          faces=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[2,3,7,6],]
     )
-c=OBJFile("Shambler.obj")
-c.scaleCoords(-3)
+#c=OBJFile("Shambler.obj")
+c.scaleCoords(-20.75)
 c.update2dCoords()
 
 def TransformationLoop():
@@ -22,7 +22,15 @@ def TransformationLoop():
     c.update2dCoords()
     sleep(0.0)
 
-
+def display(shape):
+    def center(x):
+        x=list(x)
+        x[0]+=WIDTH/2
+        x[1]+=HEIGHT/2
+        return x
+    for face in shape.faces:
+        pygame.draw.polygon(screen, tuple(random.randint(0, 255) for i in range(3)), list(map(center,face.TwoDCoords)))
+    pygame.display.flip()
 
 if __name__ == '__main__':
 
@@ -45,14 +53,8 @@ if __name__ == '__main__':
         c.update2dCoords()
 
 
-        for face in c.faces[::-1]:
-            coords = []
-            for point in face:
-                coords.append(tuple(c.TwoDimensionalCoords[point][i]+(WIDTH,HEIGHT)[i]/2 for i in range(2)))
-            print(c.TwoDimensionalCoords)
-            pygame.draw.polygon(screen, tuple(random.randint(0,255) for i in range(3)), coords)
-        pygame.display.flip()
-        clock.tick(60)
+        display(c)
+        clock.tick(FPS)
 
 
     pygame.quit()

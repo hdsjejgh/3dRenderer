@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 import math
 #from main import FOV
-
-FOV = 150
-symbols = tuple(i+str(idx)+"\033[0m" for idx,i in enumerate(("\033[0;31m", "\033[0;32m", "\033[0;34m", "\033[1;33m", "\033[0;36m", "\033[1;35m"))) #what symbol to use for each face (the weird symbols are ansi color codes to add colors)
+from parameters import *
 
 
 def sin(deg: int|float) -> float: #sine function for degrees
@@ -12,21 +10,37 @@ def cos(deg: int|float) -> float: #cosine function for degrees
     return math.cos((deg*math.pi)/180)
 
 class Shape(ABC): #base class for all shapes (will add more shapes later)
+
+    class face:
+        def __init__(self,outerInstance, indices, id):
+            self.id=id
+            self.indices = indices
+            self.outerInstance = outerInstance
+            self.z = mean([outerInstance.coords[i][2] for i in indices])
+            self.TwoDCoords = tuple((self.outerInstance.coords[i][0]*FOV/(self.outerInstance.coords[i][2]+FOV),self.outerInstance.coords[i][1]*FOV/(self.outerInstance.coords[i][2]+FOV)) for i in indices)
+
+        def __lt__(self, other):
+            return self.z<other.z
+
+        def __to2d__(self):
+            pass
+
+        def update(self):
+            self.z = mean([self.outerInstance.coords[i][2] for i in self.indices])
+            self.TwoDCoords = tuple((self.outerInstance.coords[i][0] * FOV / (self.outerInstance.coords[i][2] + FOV),self.outerInstance.coords[i][1] * FOV / (self.outerInstance.coords[i][2] + FOV)) for i in self.indices)
+
     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None):
         self.coords = coords
-        self.faces = faces
-        self.TwoDimensionalCoords = [(i[0]*FOV/(i[2]+FOV),i[1]*FOV/(i[2]+FOV)) for i in coords]
-        self.avZ = [sum(coords[ii][-1] for ii in i)/len(i) for i in faces] #average Z value of all faces (used for seeing which face to display on top)
+        self.faces = [self.face(self,faces[i],i) for i in range(len(faces))]
 
         self.center = centerCoords if centerCoords is not None else self.cc() #center coordinates of rotation
     @abstractmethod
     def cc(self): #function for center coordinate, different for each shape
         pass
     def update2dCoords(self): #updates 2d coords and avZ for after rotation
-        self.faces.sort(key = lambda x:sum(self.coords[x[i]][2] for i in range(len(x)))/len(x))
-        self.TwoDimensionalCoords = [(i[0] * FOV / (i[2] + FOV), i[1] * FOV / (i[2] + FOV)) for i in self.coords]
-        self.avZ = [sum(self.coords[ii][-1] for ii in i) / len(i) for i in self.faces]
-
+        for face in self.faces:
+            face.update()
+        self.faces.sort(reverse=True)
 
 
     def rotateCoords(self,axis: str,  angle:int|float): #rotates coordinates
@@ -132,7 +146,7 @@ class OBJFile(Shape):
                     line = line.split()
                     if len(line)<1:
                         continue
-                    print(line)
+                    #print(line)
                     type = line[0]
 
                     if type == 'v':
@@ -147,8 +161,8 @@ class OBJFile(Shape):
                         self.faces.append(face)
                 except Exception as e:
                     print("ERROr")
-                    input(e)
-        print(self.coords)
+                    exit()
+        #print(self.coords)
         self.TwoDimensionalCoords = [(i[0] * FOV / (i[2] + FOV), i[1] * FOV / (i[2] + FOV)) for i in self.coords]
         self.avZ = [sum(self.coords[ii][-1] for ii in i) / len(i) for i in self.faces]
         self.center = self.cc()
@@ -165,5 +179,5 @@ class OBJFile(Shape):
             maxz = max(maxz, coord[2])
         return (minx+maxx)/2,(miny+maxy)/2,(minz+maxz)/2
 
-
-
+def mean(arr):
+    return sum(arr)/len(arr)
