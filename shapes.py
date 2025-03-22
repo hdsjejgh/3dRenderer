@@ -74,6 +74,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         c1 = self.center[0]
         c2 = self.center[1]
         c3 = self.center[2]
+        sa,ca = sin(angle),cos(angle)
         for idx,triple in enumerate(coords):
             x = triple[0]
             y = triple[1]
@@ -86,24 +87,24 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
                 #|     1      0          0      |
                 #|     0  cos(angle) -sin(angle)|
                 #|     0  sin(angle) cos(angle) |
-                t[1] = (y-c2)*cos(angle) + (z-c3)*-sin(angle) + c2 #y
-                t[2] = (y-c2)*sin(angle) + (z-c3)*cos(angle) + c3 #z
+                t[1] = (y-c2)*ca + (z-c3)*-sa + c2 #y
+                t[2] = (y-c2)*sa + (z-c3)*ca + c3 #z
             elif 1 not in indices:
                 #Rotation Matrix about Y axis
                 #
                 #| cos(angle) 0 sin(angle) |
                 #|     0      1     0      |
                 #|-sin(angle) 0 cos(angle) |
-                t[0] = (x-c1)*cos(angle) + (z-c3)*sin(angle) + c1 #x
-                t[2] = -(x-c1)*sin(angle) + (z-c3)*cos(angle) + c3 #z
+                t[0] = (x-c1)*ca + (z-c3)*sa + c1 #x
+                t[2] = -(x-c1)*sa + (z-c3)*ca + c3 #z
             elif 2 not in indices:
                 #Rotation Matrix about Z axis
                 #
                 #|cos(angle) sin(angle)   0      |
                 #|-sin(angle) cos(angle    0      |
                 #|     0        0         1      |
-                t[0] = (x-c1)*cos(angle) + (y-c2)*sin(angle) + c1 #x
-                t[1] = -(x-c1)*sin(angle) + (y-c2)*cos(angle) + c2 #y
+                t[0] = (x-c1)*ca + (y-c2)*sa + c1 #x
+                t[1] = -(x-c1)*sa + (y-c2)*ca + c2 #y
             coords[idx] = t
 
         if BACKFACECULLING:
@@ -111,14 +112,14 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
                 t=list(face.normal)
                 x,y,z = t
                 if 0 not in indices:
-                    t[1] = (y) * cos(angle) + (z) * -sin(angle)  # y
-                    t[2] = (y) * sin(angle) + (z) * cos(angle)  # z
+                    t[1] = (y) * ca + (z) * -sa  # y
+                    t[2] = (y) * sa + (z) * ca  # z
                 elif 1 not in indices:
-                    t[0] = (x) * cos(angle) + (z) * sin(angle)  # x
-                    t[2] = -(x) * sin(angle) + (z) * cos(angle)  # z
+                    t[0] = (x) * ca + (z) * sa  # x
+                    t[2] = -(x) * sa + (z) * ca  # z
                 elif 2 not in indices:
-                    t[0] = (x) * cos(angle) + (y) * sin(angle)  # x
-                    t[1] = -(x) * sin(angle) + (y) * cos(angle)  # y
+                    t[0] = (x) * ca + (y) * sa  # x
+                    t[1] = -(x) * sa + (y) * ca  # y
                 s = math.sqrt(sum(map(lambda x: x**2, t)))
                 self.faces[idx].normal=tuple(map(lambda x: x / s, t))
 

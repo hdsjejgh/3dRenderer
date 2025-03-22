@@ -49,7 +49,7 @@ if __name__ == '__main__':
         c.update2dCoords()
 
 
-        display(c,distShader(0.03))
+        display(c,sideShadow())
         clock.tick(FPS)
 
 
