@@ -18,6 +18,8 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
             self.outerInstance = outerInstance
             self.z = mean([outerInstance.coords[i][2] for i in indices])
             self.TwoDCoords = tuple((self.outerInstance.coords[i][0]*FOV/(self.outerInstance.coords[i][2]+FOV),self.outerInstance.coords[i][1]*FOV/(self.outerInstance.coords[i][2]+FOV)) for i in indices)
+            if BACKFACECULLING:
+                self.normal = self.__crossprod__(self.__pointToVec__(self.outerInstance.coords[indices[0]], self.outerInstance.coords[indices[1]]), self.__pointToVec__(self.outerInstance.coords[indices[1]], self.outerInstance.coords[indices[2]]))
 
         def __lt__(self, other):
             return self.z<other.z
@@ -28,6 +30,15 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         def update(self):
             self.z = mean([self.outerInstance.coords[i][2] for i in self.indices])
             self.TwoDCoords = tuple((self.outerInstance.coords[i][0] * FOV / (self.outerInstance.coords[i][2] + FOV),self.outerInstance.coords[i][1] * FOV / (self.outerInstance.coords[i][2] + FOV)) for i in self.indices)
+
+        def __crossprod__(self,v1,v2):
+            vector = (v1[1]*v2[2]-v1[2]*v2[1], v1[2]*v2[0]-v1[0]*v2[2], v1[0]*v2[1]-v1[1]*v2[0])
+            s = math.sqrt(sum(map(lambda x: x**2, vector)))
+            return tuple(map(lambda x:-x/s, vector))
+
+        def __pointToVec__(self,p1,p2):
+            return tuple(p1[i]-p2[i] for i in range(3))
+
 
     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None):
         self.coords = coords
@@ -42,6 +53,17 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
             face.update()
         self.faces.sort(reverse=True)
 
+
+    def validFaces(self):
+        if not BACKFACECULLING:
+            return self.faces
+        else:
+            return tuple(filter(lambda x: x.normal[2]<=0, self.faces))
+
+    def __dotProd__(self,v1,v2):
+        assert len(v1)==len(v2), "Invalid vector lengths"
+
+        return sum(v1[i]+v2[i] for i in range(len(v1)))
 
     def rotateCoords(self,axis: str,  angle:int|float): #rotates coordinates
         coords = self.coords
@@ -66,7 +88,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
                 #|     0  sin(angle) cos(angle) |
                 t[1] = (y-c2)*cos(angle) + (z-c3)*-sin(angle) + c2 #y
                 t[2] = (y-c2)*sin(angle) + (z-c3)*cos(angle) + c3 #z
-            if 1 not in indices:
+            elif 1 not in indices:
                 #Rotation Matrix about Y axis
                 #
                 #| cos(angle) 0 sin(angle) |
@@ -74,7 +96,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
                 #|-sin(angle) 0 cos(angle) |
                 t[0] = (x-c1)*cos(angle) + (z-c3)*sin(angle) + c1 #x
                 t[2] = -(x-c1)*sin(angle) + (z-c3)*cos(angle) + c3 #z
-            if 2 not in indices:
+            elif 2 not in indices:
                 #Rotation Matrix about Z axis
                 #
                 #|cos(angle) sin(angle)   0      |
@@ -83,6 +105,23 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
                 t[0] = (x-c1)*cos(angle) + (y-c2)*sin(angle) + c1 #x
                 t[1] = -(x-c1)*sin(angle) + (y-c2)*cos(angle) + c2 #y
             coords[idx] = t
+
+        if BACKFACECULLING:
+            for idx,face in enumerate(self.faces):
+                t=list(face.normal)
+                x,y,z = t
+                if 0 not in indices:
+                    t[1] = (y) * cos(angle) + (z) * -sin(angle)  # y
+                    t[2] = (y) * sin(angle) + (z) * cos(angle)  # z
+                elif 1 not in indices:
+                    t[0] = (x) * cos(angle) + (z) * sin(angle)  # x
+                    t[2] = -(x) * sin(angle) + (z) * cos(angle)  # z
+                elif 2 not in indices:
+                    t[0] = (x) * cos(angle) + (y) * sin(angle)  # x
+                    t[1] = -(x) * sin(angle) + (y) * cos(angle)  # y
+                s = math.sqrt(sum(map(lambda x: x**2, t)))
+                self.faces[idx].normal=tuple(map(lambda x: x / s, t))
+
 
         self.coords= coords
 
