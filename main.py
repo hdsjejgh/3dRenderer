@@ -10,13 +10,14 @@ c=Cube(
          faces=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[2,3,7,6],]
     )
 c=OBJFile("models/Hellknight.obj")
-c.scaleCoords(-1)
+c.scaleCoords(-2)
+c.shiftCoords('y',100)
 c.update2dCoords()
 
 def TransformationLoop():
-    #c.rotateCoords('x', 6)
+    #c.rotateCoords('x', 4)
     c.rotateCoords('y', -5)
-    #c.rotateCoords('z', math.e)
+    #c.rotateCoords('z', 1)
     c.update2dCoords()
     #sleep(0.0)
 
