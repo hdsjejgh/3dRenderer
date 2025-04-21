@@ -1,3 +1,15 @@
-3D rendering of a Cube made fully within the console.
+3D rendering with capability to load in translate OBJ files within Python
+
+Display made with pygame
+
+
+(Working on more optimizations)
+
 # #
-![](https://github.com/hdsjejgh/3dRenderer/blob/ca875315b1f2a599aa3a38c1eb67e07c2b39400b/media/cube.gif)
+## Lower Face Count Model ##
+![](media/Gabriel.gif)
+
+# #
+## Higher Face Count Model ##
+![](media/Hellknight.gif)
+
