@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 pygame = "*"
+cupy = "*"
+numpy = "*"
 
 [dev-packages]
 

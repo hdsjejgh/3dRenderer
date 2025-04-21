@@ -1,14 +1,14 @@
-from time import sleep
+from time import sleep,time
 from shapes import *
 import pygame
 import random
 from parameters import *
 from shaders import *
 
-c=Cube(
-        coords=[[-2,2,2],[2,2,2],[2,-2,2],[-2,-2,2],[-2,2,6],[2,2,6],[2,-2,6],[-2,-2,6],],
-         faces=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[2,3,7,6],]
-    )
+# c=Cube(
+#         coords=[[-2,2,2],[2,2,2],[2,-2,2],[-2,-2,2],[-2,2,6],[2,2,6],[2,-2,6],[-2,-2,6],],
+#          faces=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[2,3,7,6],]
+#     )
 c=OBJFile("models/Hellknight.obj")
 c.scaleCoords(-2)
 c.shiftCoords('y',100)
@@ -39,22 +39,18 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
 
     while running:
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running=False
 
 
         screen.fill('black')
+
         TransformationLoop()
         c.update2dCoords()
-
 
         display(c,sideShadow())
         clock.tick(FPS)
 
 
     pygame.quit()
-
-
-

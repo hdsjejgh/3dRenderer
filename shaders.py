@@ -1,6 +1,5 @@
 import random
 import math
-
 from parameters import BACKFACECULLING
 
 #(for the random shader)
