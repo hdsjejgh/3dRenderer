@@ -3,7 +3,8 @@ import math
 #from main import FOV
 from parameters import *
 import numpy as np
-
+from time import time
+from multiprocessing import Pool
 
 def sin(deg: int|float) -> float: #sine function for degrees
     return math.sin((deg*math.pi)/180)
@@ -35,11 +36,12 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         def __to2d__(self):
             pass
 
-        def update(self):
-            self.z = np.mean(self.outerInstance.coords[self.indices, 2])
-            points = self.outerInstance.coords[self.indices]
-            denominator = points[:, 2] + FOV
-            self.TwoDCoords = np.stack((points[:, 0] * FOV / denominator, points[:, 1] * FOV / denominator), axis=1)
+        # def update(self):
+        #     self.z = np.mean(self.outerInstance.coords[self.indices, 2])
+        #     points = self.outerInstance.coords[self.indices]
+        #     denominator = points[:, 2] + FOV
+        #     self.TwoDCoords = np.stack((points[:, 0] * FOV / denominator, points[:, 1] * FOV / denominator), axis=1)
+        #     return self
 
 
     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None):
@@ -55,8 +57,16 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
 
     def update2dCoords(self): #updates 2d coords and avZ for after rotation
-        for face in self.faces:
-            face.update()
+        indices = np.array([face.indices for face in self.faces])
+        points = np.array([self.coords[idx] for idx in indices])
+        z = np.mean(points[:, :, 2], axis=1)
+        denominator = points[:, :, 2] + FOV
+        TwoDCoords = np.stack((points[:, :, 0] * FOV / denominator, points[:, :, 1] * FOV / denominator), axis=2)
+
+        for i, face in enumerate(self.faces):
+            face.z = z[i]
+            face.TwoDCoords = TwoDCoords[i]
+
         self.faces.sort(reverse=True)
 
 
@@ -70,9 +80,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
         axis = axis.lower()
         assert axis in ('x','y','z'), "Invalid axis, Axis must be 'x','y', or 'z'"
-        c1 = self.center[0]
-        c2 = self.center[1]
-        c3 = self.center[2]
+        c1,c2,c3 = self.center
         sa,ca = sin(angle),cos(angle)
 
         # Rotation Matrix about X axis
@@ -103,25 +111,6 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         shifted = shifted @ rotMat.T
         self.coords = shifted+self.center
 
-        for idx,triple in enumerate(self.coords):
-            x = triple[0]
-            y = triple[1]
-            z = triple[2]
-            t = triple.copy()
-
-            if axis == 0:
-
-                t[1] = (y-c2)*ca + (z-c3)*-sa + c2 #y
-                t[2] = (y-c2)*sa + (z-c3)*ca + c3 #z
-            elif axis == 1:
-
-                t[0] = (x-c1)*ca + (z-c3)*sa + c1 #x
-                t[2] = -(x-c1)*sa + (z-c3)*ca + c3 #z
-            elif axis == 2:
-
-                t[0] = (x-c1)*ca + (y-c2)*sa + c1 #x
-                t[1] = -(x-c1)*sa + (y-c2)*ca + c2 #y
-            self.coords[idx] = t
 
         if BACKFACECULLING:
             for idx,face in enumerate(self.faces):
