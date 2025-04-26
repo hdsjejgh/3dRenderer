@@ -1,6 +1,7 @@
 import random
 import math
-from parameters import BACKFACECULLING
+from parameters import *
+import numpy as np
 
 #(for the random shader)
 COLORS = tuple(tuple(random.randint(0,255) for ii in range(3)) for i in range(100))
@@ -22,8 +23,8 @@ def distShader(mult=0.05,base=(255,255,255)): #mult controls steepness of sigmoi
         return tuple(map(lambda x:x*(val/255),base))
     return wrapper
 
-def sideShadow():
-    assert BACKFACECULLING, "Backface Culling must be on for Side Shadow"
+def Lambertian(): #technically this isnt lambertian but its close enough
+    assert BACKFACECULLING, "Backface Culling must be on for Lambertian"
     def wrapper(face):
-        return tuple(205*face.normal[2]**2+50 for i in range(3))
+        return np.array([205*(np.dot(VIEW_VECTOR,face.normal))**2+50]*3, dtype=np.uint8)
     return wrapper

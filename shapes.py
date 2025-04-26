@@ -51,8 +51,8 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         self.center = centerCoords if centerCoords is not None else self.cc() #center coordinates of rotation
 
     def cc(self): #function for center coordinate, different for each shape
-        mins = np.min(self.coords, axis=0)  # shape (3,)
-        maxs = np.max(self.coords, axis=0)  # shape (3,)
+        mins = np.min(self.coords, axis=0)
+        maxs = np.max(self.coords, axis=0)
         return (mins + maxs) / 2
 
 
