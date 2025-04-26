@@ -74,7 +74,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         if not BACKFACECULLING:
             return self.faces
         else:
-            return tuple(filter(lambda x: np.dot(x.normal, VIEW_VECTOR)<=0, self.faces))
+            return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e6, self.faces))
 
     def rotateCoords(self,axis: str,  angle:int|float): #rotates coordinates
 
@@ -115,6 +115,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         if BACKFACECULLING:
             for idx,face in enumerate(self.faces):
                 face.normal = face.normal @ rotMat.T
+
 
 
     def shiftCoords(self, axis: str, amount:int|float,coords=None):

@@ -1,4 +1,3 @@
-from pickletools import uint8
 from time import sleep,time
 import numpy as np
 from shapes import *
@@ -48,14 +47,17 @@ def rasterize(coords,color,view):
     # print(grid)
 
     def cross_prod_2d(points,vec):
-        return (points[:,0]*vec[1] - points[:,1]*vec[0])
+        return points[:,0]*vec[1] - points[:,1]*vec[0]
 
     AB = B-A
     AC = C-A
+    ar = AB[0] * AC[1] - AB[1] * AC[0]
+    if ar==0:
+        return
     v0 = cross_prod_2d(grid-A,B-A)
     v1 = cross_prod_2d(grid-B,C-B)
     v2 = cross_prod_2d(grid-C,A-C)
-    ar = AB[0]*AC[1]-AB[1]*AC[0]
+
     same_sign = ((v0>=0) & (v1>=0) & (v2>=0) | ((v0<=0) & (v1<=0) & (v2<=0)))
     mask = (np.isclose(v0+v1+v2,ar,1e5)) & same_sign
     slice = view[mins[1]:maxs[1], mins[0]:maxs[0]]
@@ -83,8 +85,8 @@ def display(shape,shader):
 
 if __name__ == '__main__':
 
-    c = OBJFile("models/Shambler.obj")
-    c.scaleCoords(-3)
+    c = OBJFile("models/Hellknight.obj")
+    c.scaleCoords(-2)
     #c.shiftCoords('y', 100)
     c.update2dCoords()
     shader = Lambertian()
