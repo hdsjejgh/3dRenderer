@@ -21,6 +21,10 @@ def TransformationLoop():
     c.update2dCoords()
     #sleep(0.0)
 
+def pretransformation():
+    c.scaleCoords(-3)
+    # c.shiftCoords('y', 100)
+
 def rasterize(coords,color,view):
     # print(color)
     def cross2d(u, v):
@@ -49,79 +53,84 @@ def rasterize(coords,color,view):
     def cross_prod_2d(points,vec):
         return points[:,0]*vec[1] - points[:,1]*vec[0]
 
-    AB = B-A
-    AC = C-A
-    ar = AB[0] * AC[1] - AB[1] * AC[0]
+    ar = (B-A)[0] * (C-A)[1] - (B-A)[1] * (C-A)[0]
     if ar==0:
         return
     v0 = cross_prod_2d(grid-A,B-A)
     v1 = cross_prod_2d(grid-B,C-B)
     v2 = cross_prod_2d(grid-C,A-C)
 
-    same_sign = ((v0>=0) & (v1>=0) & (v2>=0) | ((v0<=0) & (v1<=0) & (v2<=0)))
+    signs = np.signbit(v0), np.signbit(v1), np.signbit(v2)
+    same_sign = (signs[0] == signs[1]) & (signs[1] == signs[2])
     mask = (np.isclose(v0+v1+v2,ar,1e5)) & same_sign
-    slice = view[mins[1]:maxs[1], mins[0]:maxs[0]]
+    # slice = view[mins[1]:maxs[1], mins[0]:maxs[0]]
 
     mask = mask.reshape(dimensions[1],dimensions[0])
-    slice[mask] = color
-    view[mins[1]:maxs[1], mins[0]:maxs[0]] = slice
+    # slice[mask] = color
+    view[mins[1]:maxs[1], mins[0]:maxs[0]][mask] = color
 
 
 def display(shape,shader):
-    global view
-    view = np.zeros((HEIGHT, WIDTH, 3),dtype=np.uint8)
-    centArray = np.array([WIDTH/2,HEIGHT/2])
-
-    for face in shape.validFaces():
-        coords = face.TwoDCoords+centArray
-        color = shader(face)
-        color = np.clip(color, 0, 255).astype(np.uint8)
-        rasterize(coords,color,view)
-
-
-    # for face in shape.validFaces():
-    #     pygame.draw.polygon(screen, shader(face), list(map(center,face.TwoDCoords)))
-    # pygame.display.flip()
+    if DISPLAY_MODE == 'rasterizer':
+        global view
+        view = np.zeros((HEIGHT, WIDTH, 3),dtype=np.uint8)
+        centArray = np.array([WIDTH/2,HEIGHT/2])
+        print(len(shape.validFaces()))
+        for face in shape.validFaces():
+            coords = face.TwoDCoords+centArray
+            color = shader(face)
+            color = np.clip(color, 0, 255).astype(np.uint8)
+            rasterize(coords,color,view)
+    if DISPLAY_MODE == 'pygame':
+        def center(x):
+            x = list(x)
+            x[0] += WIDTH / 2
+            x[1] += HEIGHT / 2
+            return x
+        for face in shape.validFaces():
+            pygame.draw.polygon(screen, shader(face), list(map(center,face.TwoDCoords)))
+        pygame.display.flip()
 
 if __name__ == '__main__':
 
-    c = OBJFile("models/Hellknight.obj")
-    c.scaleCoords(-2)
-    #c.shiftCoords('y', 100)
+    c = OBJFile("models/Shambler.obj")
+    pretransformation()
     c.update2dCoords()
     shader = Lambertian()
 
-    # pygame.init()
-    # screen = pygame.display.set_mode((WIDTH,HEIGHT))
-    # running = True
-    # clock = pygame.time.Clock()
-    # shader = Lambertian()
-    #
-    # while running:
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             running=False
-    #
-    #
-    #     screen.fill('black')
-    #     # now = time()
-    #     TransformationLoop()
-    #     # print(f"Transformation: {time()-now}")
-    #     # now = time()
-    #     c.update2dCoords()
-    #     # print(f"2difying: {time()-now}")
-    #     # now = time()
-    #     display(c,shader)
-    #     # print(f"Displaying: {time()-now}")
-    #     #clock.tick(FPS)
-    #
-    #
-    # pygame.quit()
+    if DISPLAY_MODE == 'pygame':
+        pygame.init()
+        screen = pygame.display.set_mode((WIDTH,HEIGHT))
+        running = True
+        clock = pygame.time.Clock()
+        shader = Lambertian()
 
-    while cv.waitKey(20)&0xff != ord('x'):
-        view = np.zeros((HEIGHT,WIDTH,3),dtype=np.uint8)
-        display(c,shader)
-        cv.imshow("3",view)
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running=False
 
-        TransformationLoop()
-        c.update2dCoords()
+
+            screen.fill('black')
+            # now = time()
+            TransformationLoop()
+            # print(f"Transformation: {time()-now}")
+            # now = time()
+            c.update2dCoords()
+            # print(f"2difying: {time()-now}")
+            # now = time()
+            display(c,shader)
+            # print(f"Displaying: {time()-now}")
+            #clock.tick(FPS)
+
+
+        pygame.quit()
+
+    if DISPLAY_MODE == 'rasterizer':
+        while cv.waitKey(20)&0xff != ord('x'):
+            view = np.zeros((HEIGHT,WIDTH,3),dtype=np.uint8)
+            display(c,shader)
+            cv.imshow("3d Render",view)
+
+            TransformationLoop()
+            c.update2dCoords()
