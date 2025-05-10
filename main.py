@@ -7,6 +7,9 @@ import pygame
 from parameters import *
 from shaders import *
 import cv2 as cv
+import numba
+
+BENCHMARK = False
 
 # c=Cube(
 #         coords=[[-2,2,2],[2,2,2],[2,-2,2],[-2,-2,2],[-2,2,6],[2,2,6],[2,-2,6],[-2,-2,6],],
@@ -16,66 +19,46 @@ import cv2 as cv
 
 def TransformationLoop():
     #c.rotateCoords('x', 4)
-    c.rotateCoords('y', -1)
+    c.rotateCoords('y', -3)
     #c.rotateCoords('z', 1)
     c.update2dCoords()
     #sleep(0.0)
 
 def pretransformation():
-    c.scaleCoords(-3)
+    c.scaleCoords(-2)
     # c.shiftCoords('y', 100)
 
-def rasterize(coords,color,view):
-    # print(color)
-    def cross2d(u, v):
-        return u[:, 0] * v[:, 1] - u[:, 1] * v[:, 0]
-    A,B,C = coords
-    mins = np.min(coords, axis=0)
-    maxs = np.max(coords, axis=0)
-    mins = mins.astype(int)
-    maxs = maxs.astype(int)+1
-    mins = np.clip(mins,0,800)
-    maxs = np.clip(maxs, 0, 800)
-    dimensions = maxs-mins
-    if np.any(dimensions<=0):
+@numba.njit() #I LOVE NUMBA; IT MADE THE CODE SO MUCH QUICKER AND GOT RID OF ALL THE SILLY NUMPY STUFF ITS SO SIMPLE NOW, I OWE TRAVIS OLIPHANT MY LIFE
+def rasterize(coords, color, view):
+    A, B, C = coords
+
+    #Used for the bounding box
+    min_x = max(int(min(A[0], B[0], C[0])), 0)
+    max_x = min(int(max(A[0], B[0], C[0])) + 1, view.shape[1])
+    min_y = max(int(min(A[1], B[1], C[1])), 0)
+    max_y = min(int(max(A[1], B[1], C[1])) + 1, view.shape[0])
+
+    #area of triangle
+    area = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
+    if area == 0:
         return
-    # print(dimensions)
-    # print(mins)
-    # print(maxs)
-    xl = np.arange(mins[0], maxs[0])
-    yl = np.arange(mins[1], maxs[1])
-    xs,ys = np.meshgrid(xl,yl)
-    grid = np.stack((xs,ys),axis=-1)
-    grid = grid.reshape(-1,2)
-    grid = grid.astype(float)
-    # print(grid)
 
-    def cross_prod_2d(points,vec):
-        return points[:,0]*vec[1] - points[:,1]*vec[0]
+    for y in range(min_y, max_y):
+        for x in range(min_x, max_x):
+            #barycentric coordinates are the goat
+            w0 = (B[0] - A[0]) * (y - A[1]) - (B[1] - A[1]) * (x - A[0])
+            w1 = (C[0] - B[0]) * (y - B[1]) - (C[1] - B[1]) * (x - B[0])
+            w2 = (A[0] - C[0]) * (y - C[1]) - (A[1] - C[1]) * (x - C[0])
 
-    ar = (B-A)[0] * (C-A)[1] - (B-A)[1] * (C-A)[0]
-    if ar==0:
-        return
-    v0 = cross_prod_2d(grid-A,B-A)
-    v1 = cross_prod_2d(grid-B,C-B)
-    v2 = cross_prod_2d(grid-C,A-C)
-
-    signs = np.signbit(v0), np.signbit(v1), np.signbit(v2)
-    same_sign = (signs[0] == signs[1]) & (signs[1] == signs[2])
-    mask = (np.isclose(v0+v1+v2,ar,1e5)) & same_sign
-    # slice = view[mins[1]:maxs[1], mins[0]:maxs[0]]
-
-    mask = mask.reshape(dimensions[1],dimensions[0])
-    # slice[mask] = color
-    view[mins[1]:maxs[1], mins[0]:maxs[0]][mask] = color
-
+            if (w0 >= 0 and w1 >= 0 and w2 >= 0) or (w0 <= 0 and w1 <= 0 and w2 <= 0):
+                view[y, x] = color
 
 def display(shape,shader):
     if DISPLAY_MODE == 'rasterizer':
         global view
         view = np.zeros((HEIGHT, WIDTH, 3),dtype=np.uint8)
         centArray = np.array([WIDTH/2,HEIGHT/2])
-        print(len(shape.validFaces()))
+        # print(len(shape.validFaces()))
         for face in shape.validFaces():
             coords = face.TwoDCoords+centArray
             color = shader(face)
@@ -91,9 +74,17 @@ def display(shape,shader):
             pygame.draw.polygon(screen, shader(face), list(map(center,face.TwoDCoords)))
         pygame.display.flip()
 
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
 
-    c = OBJFile("models/Shambler.obj")
+    c = OBJFile("models/Hellknight.obj")
     pretransformation()
     c.update2dCoords()
     shader = Lambertian()
@@ -112,16 +103,14 @@ if __name__ == '__main__':
 
 
             screen.fill('black')
-            # now = time()
+            if BENCHMARK: now=time()
             TransformationLoop()
-            # print(f"Transformation: {time()-now}")
-            # now = time()
+
             c.update2dCoords()
-            # print(f"2difying: {time()-now}")
-            # now = time()
+
+            if BENCHMARK: print("Transforming:",time()-now,"seconds");now = time()
             display(c,shader)
-            # print(f"Displaying: {time()-now}")
-            #clock.tick(FPS)
+            if BENCHMARK: print("Displaying:",time()-now,"seconds")
 
 
         pygame.quit()
@@ -129,8 +118,15 @@ if __name__ == '__main__':
     if DISPLAY_MODE == 'rasterizer':
         while cv.waitKey(20)&0xff != ord('x'):
             view = np.zeros((HEIGHT,WIDTH,3),dtype=np.uint8)
+
+            if BENCHMARK: now = time()
+
             display(c,shader)
             cv.imshow("3d Render",view)
 
+            if BENCHMARK: print(f"Displaying:",time()-now,"seconds"); now = time()
+
             TransformationLoop()
             c.update2dCoords()
+
+            if BENCHMARK: print("Transforming:",time()-now,"seconds")
