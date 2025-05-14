@@ -28,3 +28,17 @@ def Lambertian(): #technically this isnt lambertian but its close enough
     def wrapper(face):
         return np.array([205*(np.dot(VIEW_VECTOR,face.normal))**2+50]*3, dtype=np.uint8)
     return wrapper
+
+def Gouraud():
+    def wrapper(point,params,points3d,normals):
+        A,B,C,D = params
+        x,y = point
+        z = (D - A*x - B*y) / C
+        points = np.array([x,y,z])
+        dists = np.linalg.norm(points3d - point, axis=1)
+        colors = [np.array([205*(np.dot(VIEW_VECTOR,normal))**2+50]*3, dtype=np.uint8) for normal in normals]
+        color = sum(colors[i]/dists[i] for i in range(3))*np.mean(dists)
+        return color
+    return wrapper
+
+

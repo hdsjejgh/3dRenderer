@@ -5,6 +5,7 @@ from parameters import *
 import numpy as np
 from time import time
 from multiprocessing import Pool
+import numba
 
 def sin(deg: int|float) -> float: #sine function for degrees
     return math.sin((deg*math.pi)/180)
@@ -19,10 +20,9 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
             self.indices = np.array(indices)
             self.outerInstance = outerInstance
             self.z = np.mean(outerInstance.coords[indices, 2])
-
-            points = self.outerInstance.coords[indices]
-            denominator = points[:, 2] + FOV
-            self.TwoDCoords = np.stack((points[:, 0] * FOV / denominator,points[:, 1] * FOV / denominator), axis=1)
+            self.points = self.outerInstance.coords[indices]
+            denominator = self.points[:, 2] + FOV
+            self.TwoDCoords = np.stack((self.points[:, 0] * FOV / denominator,self.points[:, 1] * FOV / denominator), axis=1)
             if BACKFACECULLING:
                 p0,p1,p2 = outerInstance.coords[indices[:3]]
                 v1 = p0-p1
@@ -47,14 +47,19 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None):
         self.coords = np.array(coords)
         self.faces = [self.face(self,faces[i],i) for i in range(len(faces))]
-
+        self.get_borders()
         self.center = centerCoords if centerCoords is not None else self.cc() #center coordinates of rotation
+
 
     def cc(self): #function for center coordinate, different for each shape
         mins = np.min(self.coords, axis=0)
         maxs = np.max(self.coords, axis=0)
         return (mins + maxs) / 2
 
+    def get_borders(self):
+        for face in self.faces:
+            face.bordering = [[i for i in range(len(self.faces)) if c in self.faces[i].indices] for c in face.indices]
+            face.avNorms = [np.mean([self.faces[id].normal for id in vertex],axis=0)/np.linalg.norm(np.mean([self.faces[id].normal for id in vertex],axis=0)) for vertex in face.bordering]
 
     def update2dCoords(self): #updates 2d coords and avZ for after rotation
         indices = np.array([face.indices for face in self.faces])
@@ -66,6 +71,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         for i, face in enumerate(self.faces):
             face.z = z[i]
             face.TwoDCoords = TwoDCoords[i]
+            face.points = self.coords[face.indices]
 
         self.faces.sort(reverse=True)
 
@@ -115,6 +121,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         if BACKFACECULLING:
             for idx,face in enumerate(self.faces):
                 face.normal = face.normal @ rotMat.T
+                face.avNorms = face.avNorms @ rotMat.T
 
 
 
@@ -150,13 +157,13 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
 
 
-class Cube(Shape):
-    def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None,):
-
-        assert len(coords) == 8, "Invalid vertex count"
-        assert len(faces) == 6, "Invalid face count"
-
-        super().__init__(coords, faces)
+# class Cube(Shape):
+#     def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None,):
+#
+#         assert len(coords) == 8, "Invalid vertex count"
+#         assert len(faces) == 6, "Invalid face count"
+#
+#         super().__init__(coords, faces)
 
 
 class OBJFile(Shape):
@@ -192,7 +199,7 @@ class OBJFile(Shape):
 
         #print(self.coords)
         self.faces = [self.face(self,self.faces[i],i) for i in range(len(self.faces))]
-
+        self.get_borders()
         self.center = self.cc()
 
 
