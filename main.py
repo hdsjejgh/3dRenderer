@@ -27,7 +27,8 @@ def TransformationLoop():
     #sleep(0.0)
 
 def pretransformation():
-    c.scaleCoords(-3)
+    c.scaleCoords(-2)
+    # c.rotateCoords('x',-90)
     # c.shiftCoords('y', 100)
 
 
@@ -60,10 +61,10 @@ def display(shape,shader):
 
 if __name__ == '__main__':
 
-    c = OBJFile("models/Shambler.obj",reverseNormals=False)
+    c = OBJFile("models/Monkey.obj",reverseNormals=False,loadAverageNorms=True)
     pretransformation()
     c.update2dCoords()
-    shader = Gouraud()
+    shader = Lambertian()
 
     if DISPLAY_MODE == 'pygame':
         pygame.init()

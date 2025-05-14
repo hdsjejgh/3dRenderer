@@ -9,9 +9,9 @@ Display made with pygame
 
 # #
 ## Lower Face Count Model ##
-![](media/Gabriel.gif)
+![](media/old/Gabriel.gif)
 
 # #
 ## Higher Face Count Model ##
-![](media/Hellknight.gif)
+![](media/old/Hellknight.gif)
 

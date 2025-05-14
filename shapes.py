@@ -123,8 +123,10 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         if BACKFACECULLING:
             for idx,face in enumerate(self.faces):
                 face.normal = face.normal @ rotMat.T
-                face.avNorms = face.avNorms @ rotMat.T
-
+                try:
+                    face.avNorms = face.avNorms @ rotMat.T
+                except:
+                    pass
 
 
     def shiftCoords(self, axis: str, amount:int|float,coords=None):
@@ -169,7 +171,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
 
 class OBJFile(Shape):
-    def __init__(self,filepath, reverseNormals=False, *args, **kwargs):
+    def __init__(self,filepath, reverseNormals=False, loadAverageNorms=False, *args, **kwargs):
         self.coords = []
         self.faces = []
         self.reverseNormals = reverseNormals
@@ -201,7 +203,8 @@ class OBJFile(Shape):
 
         #print(self.coords)
         self.faces = [self.face(self,self.faces[i],i) for i in range(len(self.faces))]
-        self.get_borders()
+        if loadAverageNorms:
+            self.get_borders()
         self.center = self.cc()
 
 @numba.njit() #I LOVE NUMBA; IT MADE THE CODE SO MUCH QUICKER AND GOT RID OF ALL THE SILLY NUMPY STUFF ITS SO SIMPLE NOW, I OWE TRAVIS OLIPHANT MY LIFE
