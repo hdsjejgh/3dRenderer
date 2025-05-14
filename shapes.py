@@ -18,6 +18,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         def __init__(self,outerInstance, indices, id):
             self.id=id
             self.indices = np.array(indices)
+            c = -1 if outerInstance.reverseNormals else 1
             self.outerInstance = outerInstance
             self.z = np.mean(outerInstance.coords[indices, 2])
             self.points = self.outerInstance.coords[indices]
@@ -27,7 +28,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
                 p0,p1,p2 = outerInstance.coords[indices[:3]]
                 v1 = p0-p1
                 v2 = p2-p1
-                self.normal = np.cross(v1,v2)
+                self.normal = -np.cross(v1,v2)
                 self.normal /= np.linalg.norm(self.normal)
 
         def __lt__(self, other):
@@ -44,7 +45,8 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         #     return self
 
 
-    def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None):
+    def __init__(self, coords: list[list[int|float]], faces: list[list[int|float]], centerCoords=None,reverseNormals=False):
+
         self.coords = np.array(coords)
         self.faces = [self.face(self,faces[i],i) for i in range(len(faces))]
         self.get_borders()
@@ -80,7 +82,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
         if not BACKFACECULLING:
             return self.faces
         else:
-            return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-3, self.faces))
+            return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e3, self.faces))
 
     def rotateCoords(self,axis: str,  angle:int|float): #rotates coordinates
 
@@ -167,10 +169,10 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
 
 class OBJFile(Shape):
-    def __init__(self,filepath, *args, **kwargs):
+    def __init__(self,filepath, reverseNormals=False, *args, **kwargs):
         self.coords = []
         self.faces = []
-
+        self.reverseNormals = reverseNormals
         with open(filepath, "r") as file:
             for line in file:
                 try:
@@ -202,6 +204,91 @@ class OBJFile(Shape):
         self.get_borders()
         self.center = self.cc()
 
+@numba.njit() #I LOVE NUMBA; IT MADE THE CODE SO MUCH QUICKER AND GOT RID OF ALL THE SILLY NUMPY STUFF ITS SO SIMPLE NOW, I OWE TRAVIS OLIPHANT MY LIFE
+def rasterize_gouraud(coords, view,normals,coords_3d):
+    A, B, C = coords
+    n1,n2,n3 = normals
+    x1, y1, z1 = coords_3d[0]
+    x2, y2, z2 = coords_3d[1]
+    x3, y3, z3 = coords_3d[2]
+    # a = y1 * (z2 - z3) + y2 * (z3 - z1) + y3 * (z1 - z2)
+    # b = z1 * (x2 - x3) + z2 * (x3 - x1) + z3 * (x1 - x2)
+    c = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)
+    # d = -x1 * (y2 * z3 - y3 * z2) - x2 * (y3 * z1 - y1 * z3) - x3 * (y1 * z2 - y2 * z1)
+
+    #Used for the bounding box
+    min_x = max(int(min(A[0], B[0], C[0])), 0)
+    max_x = min(int(max(A[0], B[0], C[0])) + 1, view.shape[1])
+    min_y = max(int(min(A[1], B[1], C[1])), 0)
+    max_y = min(int(max(A[1], B[1], C[1])) + 1, view.shape[0])
+
+    #area of triangle
+    area = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
+    if area == 0 or c==0:
+        return
+    colors = []
+    for y in range(min_y, max_y):
+        for x in range(min_x, max_x):
+
+            #barycentric coordinates are the goat
+            w0 = (B[0] - A[0]) * (y - A[1]) - (B[1] - A[1]) * (x - A[0])
+            w1 = (C[0] - B[0]) * (y - B[1]) - (C[1] - B[1]) * (x - B[0])
+            w2 = (A[0] - C[0]) * (y - C[1]) - (A[1] - C[1]) * (x - C[0])
+
+            if (w0 >= 0 and w1 >= 0 and w2 >= 0) or (w0 <= 0 and w1 <= 0 and w2 <= 0):
+
+                P = np.array([x, y])
+
+                v1,v2 = A-B,C-B
+                total_area = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
+
+                v1, v2 = B-P, C - P
+                alpha = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
+
+                v1, v2 = C - P, A - P
+                beta = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
+
+                v1, v2 = A - P, B - P
+                gamma = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
+                alpha/=total_area
+                beta/=total_area
+                gamma/=total_area
+                s = alpha+beta+gamma
+                alpha/=s
+                beta/=s
+                gamma/=s
+
+                color = np.array(3*[255*(max(n1[0]*LIGHT_VECTOR[0]+n1[1]*LIGHT_VECTOR[1]+n1[2]*LIGHT_VECTOR[2],0)*alpha+max(n2[0]*LIGHT_VECTOR[0]+n2[1]*LIGHT_VECTOR[1]+n2[2]*LIGHT_VECTOR[2],0)*beta+ max(n3[0]*LIGHT_VECTOR[0]+n3[1]*LIGHT_VECTOR[1]+n3[2]*LIGHT_VECTOR[2],0)*gamma)])
+                colors.append(color)
+                view[y, x] = color
+    # print(colors)
+
+@numba.njit()
+def rasterize(coords, color, view):
+    A, B, C = coords
+
+    #Used for the bounding box
+    min_x = max(int(min(A[0], B[0], C[0])), 0)
+    max_x = min(int(max(A[0], B[0], C[0])) + 1, view.shape[1])
+    min_y = max(int(min(A[1], B[1], C[1])), 0)
+    max_y = min(int(max(A[1], B[1], C[1])) + 1, view.shape[0])
+
+    #area of triangle
+    area = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
+    if area == 0:
+        return
+
+    for y in range(min_y, max_y):
+        for x in range(min_x, max_x):
+            #barycentric coordinates are the goat
+            w0 = (B[0] - A[0]) * (y - A[1]) - (B[1] - A[1]) * (x - A[0])
+            w1 = (C[0] - B[0]) * (y - B[1]) - (C[1] - B[1]) * (x - B[0])
+            w2 = (A[0] - C[0]) * (y - C[1]) - (A[1] - C[1]) * (x - C[0])
+
+            if (w0 >= 0 and w1 >= 0 and w2 >= 0) or (w0 <= 0 and w1 <= 0 and w2 <= 0):
+
+
+                view[y, x] = color
 
 
 def mean(arr):
