@@ -6,6 +6,7 @@ import numpy as np
 from time import time
 from multiprocessing import Pool
 import numba
+from collections import defaultdict
 
 def sin(deg: int|float) -> float: #sine function for degrees
     return math.sin((deg*math.pi)/180)
@@ -16,6 +17,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
     class face:
         def __init__(self,outerInstance, indices, id):
+
             self.id=id
             self.indices = np.array(indices)
             c = -1 if outerInstance.reverseNormals else 1
@@ -60,7 +62,7 @@ class Shape(ABC): #base class for all shapes (will add more shapes later)
 
     def get_borders(self):
         for face in self.faces:
-            face.bordering = [[i for i in range(len(self.faces)) if c in self.faces[i].indices] for c in face.indices]
+            face.bordering = [self.mapping[i] for i in face.indices]
             face.avNorms = [np.mean([self.faces[id].normal for id in vertex],axis=0)/np.linalg.norm(np.mean([self.faces[id].normal for id in vertex],axis=0)) for vertex in face.bordering]
 
     def update2dCoords(self): #updates 2d coords and avZ for after rotation
@@ -174,6 +176,7 @@ class OBJFile(Shape):
     def __init__(self,filepath, reverseNormals=False, loadAverageNorms=False, *args, **kwargs):
         self.coords = []
         self.faces = []
+
         self.reverseNormals = reverseNormals
         with open(filepath, "r") as file:
             for line in file:
@@ -188,6 +191,7 @@ class OBJFile(Shape):
                         items = [float(line[i]) for i in range(1, 4)]
                         self.coords.append(items)
                     elif type == 'f':
+
                         items = line[1:]
                         items = list(map(lambda x: x.split('/'),items))
                         face = []
@@ -203,7 +207,13 @@ class OBJFile(Shape):
 
         #print(self.coords)
         self.faces = [self.face(self,self.faces[i],i) for i in range(len(self.faces))]
+
+        self.mapping = defaultdict(list)
+        for i,face in enumerate(self.faces):
+            for v in face.indices:
+                self.mapping[v].append(i)
         if loadAverageNorms:
+
             self.get_borders()
         self.center = self.cc()
 
@@ -261,7 +271,7 @@ def rasterize_gouraud(coords, view,normals,coords_3d):
                 beta/=s
                 gamma/=s
 
-                color = np.array(3*[255*(max(n1[0]*LIGHT_VECTOR[0]+n1[1]*LIGHT_VECTOR[1]+n1[2]*LIGHT_VECTOR[2],0)*alpha+max(n2[0]*LIGHT_VECTOR[0]+n2[1]*LIGHT_VECTOR[1]+n2[2]*LIGHT_VECTOR[2],0)*beta+ max(n3[0]*LIGHT_VECTOR[0]+n3[1]*LIGHT_VECTOR[1]+n3[2]*LIGHT_VECTOR[2],0)*gamma)])
+                color = np.array(3*[min(255,255*(max(n1[0]*LIGHT_VECTOR[0]+n1[1]*LIGHT_VECTOR[1]+n1[2]*LIGHT_VECTOR[2],0)*alpha+max(n2[0]*LIGHT_VECTOR[0]+n2[1]*LIGHT_VECTOR[1]+n2[2]*LIGHT_VECTOR[2],0)*beta+ max(n3[0]*LIGHT_VECTOR[0]+n3[1]*LIGHT_VECTOR[1]+n3[2]*LIGHT_VECTOR[2],0)*gamma)+AMBIENT_INTENSITY)])
                 colors.append(color)
                 view[y, x] = color
     # print(colors)

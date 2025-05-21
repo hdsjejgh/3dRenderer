@@ -61,7 +61,7 @@ def display(shape,shader):
 
 if __name__ == '__main__':
 
-    c = OBJFile("models/Monkey.obj",reverseNormals=False,loadAverageNorms=True)
+    c = OBJFile("models/Hellknight.obj",reverseNormals=False,loadAverageNorms=True)
     pretransformation()
     c.update2dCoords()
     shader = Lambertian()
