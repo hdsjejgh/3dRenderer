@@ -17,6 +17,8 @@ The entire 3d rendering pipeline is implemented. It loads OBJ files, performs tr
 
 ~~Add matrix transformations~~
 
+Add a Z Buffer
+
 Refactor the messy code (all of it)
 
 Optimize the display
