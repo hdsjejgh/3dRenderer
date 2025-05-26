@@ -15,7 +15,7 @@ The entire 3d rendering pipeline is implemented. It loads OBJ files, performs tr
 
 ~~Implement a smooth shading algorithm~~
 
-Add matrix transformations
+~~Add matrix transformations~~
 
 Refactor the messy code (all of it)
 

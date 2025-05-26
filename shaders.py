@@ -24,7 +24,6 @@ def distShader(mult=0.05,base=(255,255,255)): #mult controls steepness of sigmoi
     return wrapper
 
 def Lambertian(): #technically this isnt lambertian but its close enough
-    assert BACKFACECULLING, "Backface Culling must be on for Lambertian"
     def wrapper(face):
         return np.array([205*(np.dot(VIEW_VECTOR,face.normal))**2+50]*3, dtype=np.uint8)
     return wrapper
