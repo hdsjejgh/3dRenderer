@@ -35,5 +35,7 @@ Support 4 dimensions
 ![](https://github.com/hdsjejgh/3dRenderer/blob/136cd10758a078b865bb4f9022f190069a261a52/media/mokey.gif)
 ### Large 3d model display ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/136cd10758a078b865bb4f9022f190069a261a52/media/hekewjigwke.gif)
-### Smooth Gouraud Shading (Beta) ###
-![](https://github.com/hdsjejgh/3dRenderer/blob/136cd10758a078b865bb4f9022f190069a261a52/media/gourd.gif)
+### Phong Shading (Unoptimized) ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/c584651f165a455471776cd167fb68851268dc39/media/phong.gif)
+
+
