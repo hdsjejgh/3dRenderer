@@ -32,13 +32,13 @@ def TransformationLoop():
     #sleep(0.0)
 
 def pretransformation():
-    c.scaleCoords(-4)
+    c.scaleCoords(-3.5)
     # c.rotateCoords('x',-90)
     # c.shiftCoords('y', 100)
 
 
 
-@numba.njit() #I LOVE NUMBA; IT MADE THE CODE SO MUCH QUICKER AND GOT RID OF ALL THE SILLY NUMPY STUFF ITS SO SIMPLE NOW, I OWE TRAVIS OLIPHANT MY LIFE
+@numba.njit() #travis oliphant was onto something
 def rasterize_gouraud(coords, view,zbuffer,av_normals,coords_3d,normal):
     A, B, C = coords
     n1,n2,n3 = av_normals
@@ -60,7 +60,6 @@ def rasterize_gouraud(coords, view,zbuffer,av_normals,coords_3d,normal):
     area = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
     if area == 0 or abs(c)<=0:
         return
-    colors = []
     for y in range(min_y, max_y):
         for x in range(min_x, max_x):
 
@@ -98,21 +97,45 @@ def rasterize_gouraud(coords, view,zbuffer,av_normals,coords_3d,normal):
                 beta/=s
                 gamma/=s
 
-                #shitty manual dot product because numba isn't fond of numpy functions
-                diffuse = 255*(max(n1.dot(LIGHT_VECTOR),0)*alpha+max(n2.dot(LIGHT_VECTOR),0)*beta+ max(n3.dot(LIGHT_VECTOR),0)*gamma)
-                tolight = np.array([-x,-y,-Z])
-                tolight=tolight/np.linalg.norm(tolight)
-                R= 2*normal.dot(tolight)*normal-tolight
-                R=R/np.linalg.norm(R)
-                specular = max(0,REFLECTIVITY_CONSTANT*R.dot(tolight)**PHONG_EXPONENT)
 
+                surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
-                total_intensity = diffuse+AMBIENT_INTENSITY+specular
-                total_intensity = 255*(total_intensity/255)**GAMMA
+                # finds normal of point based off of how far it is from vertices
+                interpolated_normal = alpha * n1 + beta * n2 + gamma * n3
+                interpolated_normal /= np.sqrt(np.dot(interpolated_normal, interpolated_normal))
 
-                color = np.array(3*[min(255,total_intensity)])
-                colors.append(color)
-                view[y, x] = color
+                #direction from point to light
+                light_dir = LIGHT_POS - surface_point
+                light_dir /= np.sqrt(np.dot(light_dir, light_dir))
+
+                #direction from point to camera
+                view_dir = CAMERA_POS - surface_point
+                view_dir /= np.sqrt(np.dot(view_dir, view_dir))
+
+                #The diffuse lighting
+                #for some reason using hte interpolated normal just makes it not work
+                diffuse = (
+                        max(n1.dot(LIGHT_VECTOR), 0) * alpha +
+                        max(n2.dot(LIGHT_VECTOR), 0) * beta +
+                        max(n3.dot(LIGHT_VECTOR), 0) * gamma
+                )
+
+                #what was bui tuong phong on about??
+                reflect_dir = 2.0 * np.dot(interpolated_normal, light_dir) * interpolated_normal - light_dir
+                reflect_dir /= np.sqrt(np.dot(reflect_dir, reflect_dir))
+
+                #cos of angle between direction of reflection and direction to camera
+                spec_angle = max(0.0, np.dot(reflect_dir, view_dir))
+                specular = REFLECTIVITY_CONSTANT * (spec_angle ** PHONG_EXPONENT)
+
+                intensity = AMBIENT_INTENSITY + diffuse *255 + specular*255
+                #gamma correction
+                intensity = 255.0 * (intensity / 255.0) ** GAMMA
+                #caps intensity just in case
+                intensity = min(intensity, 255.0)
+
+                color = np.array([intensity,intensity,intensity])
+                view[y, x] = color.astype(np.uint8)
     # print(colors)
 
 
@@ -145,7 +168,7 @@ if __name__ == '__main__':
     pretransformation()
     c.update2dCoords()
     shader = Lambertian()
-
+    print(c.center)
     while cv.waitKey(20)&0xff != ord('x'):
         view = np.zeros((HEIGHT,WIDTH,3),dtype=np.uint8)
 

@@ -60,7 +60,7 @@ class OBJFile():
 
     class face:
         def __init__(self,outerInstance, indices, id):
-
+            reverse = outerInstance.reverseNormals
             self.id=id
             self.indices = np.array(indices)
             c = -1 if outerInstance.reverseNormals else 1
@@ -72,7 +72,9 @@ class OBJFile():
             p0,p1,p2 = outerInstance.coords[indices[:3]]
             v1 = p0-p1
             v2 = p2-p1
-            self.normal = -np.cross(v1,v2)
+            self.normal = np.cross(v1,v2)
+            if reverse:
+                self.normal*=-1
             self.normal /= np.linalg.norm(self.normal)
 
         def __lt__(self, other):
@@ -116,7 +118,8 @@ class OBJFile():
 
 
     def validFaces(self):
-        return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e3, self.faces))
+        #for some reason, backface culling does not want to work well for some faces
+        return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-2, self.faces))
 
     def rotateCoords(self,axis: str,  angle:int|float): #rotates coordinates
 
