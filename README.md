@@ -23,7 +23,7 @@ The entire 3d rendering pipeline is implemented. It loads OBJ files, performs tr
 
 Optimize the display
 
-Add Phong shading
+~~Add Phong shading~~
 
 Add texture loading
 
