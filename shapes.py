@@ -19,6 +19,7 @@ class OBJFile():
         self.faces = []
 
         self.reverseNormals = reverseNormals
+        t = time()
         with open(filepath, "r") as file:
             for line in file:
                 try:
@@ -42,21 +43,32 @@ class OBJFile():
                 except Exception as e:
                     print("ERROr")
                     exit()
-
+        print(f"Loading: {time()-t} seconds")
+        t = time()
         self.coords = np.array(self.coords)
         self.faces = np.array(self.faces)
 
         #print(self.coords)
         self.faces = [self.face(self,self.faces[i],i) for i in range(len(self.faces))]
 
+        print(f"Faces: {time() - t} seconds")
+        t = time()
+
         self.mapping = defaultdict(list)
         for i,face in enumerate(self.faces):
             for v in face.indices:
                 self.mapping[v].append(i)
+
+        print(f"Mapping: {time() - t} seconds")
+        t = time()
+
         if loadAverageNorms:
 
             self.get_borders()
         self.center = self.cc()
+
+        print(f"Borders: {time() - t} seconds")
+        t = time()
 
     class face:
         def __init__(self,outerInstance, indices, id):

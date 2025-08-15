@@ -27,28 +27,26 @@ def TransformationLoop():
     #     [0,1,0],
     #     [0,0,1]
     # ])
-    #c.rotateCoords('z', 1)
+    #c.rotateCoords('z', 7)
     c.update2dCoords()
     #sleep(0.0)
 
 def pretransformation():
-    c.scaleCoords(-3.5)
-    # c.rotateCoords('x',-90)
-    # c.shiftCoords('y', 100)
+    c.scaleCoords(-2)
+    #c.rotateCoords('x',-90)
+    c.shiftCoords('y', -75)
 
 
 
 @numba.njit() #travis oliphant was onto something
-def rasterize_gouraud(coords, view,zbuffer,av_normals,coords_3d,normal):
-    A, B, C = coords
-    n1,n2,n3 = av_normals
+def rasterize_phong(coords, view,zbuffer,av_normals,coords_3d,normal,color = (1,1,1)):
+    red,green,blue = color
+    A, B, C = coords #2D coordinated
+    n1,n2,n3 = av_normals #average normals of the 3 vertices
+    #The 3d coordinated
     x1, y1, z1 = coords_3d[0]
     x2, y2, z2 = coords_3d[1]
     x3, y3, z3 = coords_3d[2]
-    a = (z1-z3) * (y2 - y3) - (y1-y3) * (z2 - z3)
-    b = -((x2-x3)*(z1-z3)-(z2-z3)*(x1-x3))
-    c = (x2-x3)*(y1-y3)-(y2-y3)*(x1-x3)
-    d = -(a*x1+b*y1+c*z1)
 
     #Used for the bounding box
     min_x = max(int(min(A[0], B[0], C[0])), 0)
@@ -56,49 +54,48 @@ def rasterize_gouraud(coords, view,zbuffer,av_normals,coords_3d,normal):
     min_y = max(int(min(A[1], B[1], C[1])), 0)
     max_y = min(int(max(A[1], B[1], C[1])) + 1, view.shape[0])
 
-    #area of triangle
-    area = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
-    if area == 0 or abs(c)<=0:
+    #area of the triangle face
+    v1, v2 = A - B, C - B
+    total_area = 0.5 * abs(v1[0] * v2[1] - v1[1] * v2[0])
+
+    if total_area == 0: #if triangle is too small, just skip the face
         return
+
+    #denominator used to calculate for barycentric weight incrementation
+    denom = (B[0] - C[0]) * (A[1] - C[1]) - (B[1] - C[1]) * (A[0] - C[0])
+
+    #alpha and beta for the first (top left) point in bounding box
+    x0,y0=min_x,min_y
+    alpha_0 = ((B[0] - C[0]) * (y0 - C[1]) - (B[1] - C[1]) * (x0 - C[0])) / denom
+    beta_0 = ((C[0] - A[0]) * (y0 - A[1]) - (C[1] - A[1]) * (x0 - A[0])) / denom
+
+    #change in barycentric weights per change in x/y
+    dalpha_x = -(B[1] - C[1]) / denom
+    dalpha_y = (B[0] - C[0]) / denom
+    dbeta_x = -(C[1] - A[1]) / denom
+    dbeta_y = (C[0] - A[0]) / denom
+
+    #diffuse lighting from all 3 average vertices calculated ahead of time
+    d1 = max(n1.dot(LIGHT_VECTOR), 0)
+    d2 = max(n2.dot(LIGHT_VECTOR), 0)
+    d3 = max(n3.dot(LIGHT_VECTOR), 0)
+
     for y in range(min_y, max_y):
         for x in range(min_x, max_x):
 
-            #barycentric coordinates are the goat
-            w0 = (B[0] - A[0]) * (y - A[1]) - (B[1] - A[1]) * (x - A[0])
-            w1 = (C[0] - B[0]) * (y - B[1]) - (C[1] - B[1]) * (x - B[0])
-            w2 = (A[0] - C[0]) * (y - C[1]) - (A[1] - C[1]) * (x - C[0])
+            #calculates 2d barycentric weights using previously found change values
+            alpha = alpha_0 + (x - min_x) * dalpha_x + (y - min_y) * dalpha_y
+            beta = beta_0 + (x - min_x) * dbeta_x + (y - min_y) * dbeta_y
+            gamma = 1 - alpha - beta
 
-            if (w0 >= 0 and w1 >= 0 and w2 >= 0) or (w0 <= 0 and w1 <= 0 and w2 <= 0):
-                Z = (a * x + b * y + d) / -c
-                if ZBUFF:
+            if alpha>=0 and beta>=0 and gamma>=0: #if the current point is in the triangle, continue
+                surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
+                if ZBUFF: #zbuffer barely works
+                    Z = surface_point[2]
                     if Z >= zbuffer[y, x]:
                         continue
                     zbuffer[y, x] = Z
-
-                P = np.array([x, y])
-
-                v1,v2 = A-B,C-B
-                total_area = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
-
-                v1, v2 = B-P, C - P
-                alpha = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
-
-                v1, v2 = C - P, A - P
-                beta = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
-
-                v1, v2 = A - P, B - P
-                gamma = 0.5 * abs(v1[0]*v2[1]-v1[1]*v2[0])
-                alpha/=total_area
-                beta/=total_area
-                gamma/=total_area
-                s = alpha+beta+gamma
-                alpha/=s
-                beta/=s
-                gamma/=s
-
-
-                surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
                 # finds normal of point based off of how far it is from vertices
                 interpolated_normal = alpha * n1 + beta * n2 + gamma * n3
@@ -115,12 +112,13 @@ def rasterize_gouraud(coords, view,zbuffer,av_normals,coords_3d,normal):
                 #The diffuse lighting
                 #for some reason using hte interpolated normal just makes it not work
                 diffuse = (
-                        max(n1.dot(LIGHT_VECTOR), 0) * alpha +
-                        max(n2.dot(LIGHT_VECTOR), 0) * beta +
-                        max(n3.dot(LIGHT_VECTOR), 0) * gamma
+                        d1 * alpha +
+                        d2 * beta +
+                        d3 * gamma
                 )
 
                 #what was bui tuong phong on about??
+                #calculates unit reflection direction vector
                 reflect_dir = 2.0 * np.dot(interpolated_normal, light_dir) * interpolated_normal - light_dir
                 reflect_dir /= np.sqrt(np.dot(reflect_dir, reflect_dir))
 
@@ -129,12 +127,14 @@ def rasterize_gouraud(coords, view,zbuffer,av_normals,coords_3d,normal):
                 specular = REFLECTIVITY_CONSTANT * (spec_angle ** PHONG_EXPONENT)
 
                 intensity = AMBIENT_INTENSITY + diffuse *255 + specular*255
+
                 #gamma correction
                 intensity = 255.0 * (intensity / 255.0) ** GAMMA
+
                 #caps intensity just in case
                 intensity = min(intensity, 255.0)
 
-                color = np.array([intensity,intensity,intensity])
+                color = np.array([blue*intensity,green*intensity,red*intensity])
                 view[y, x] = color.astype(np.uint8)
     # print(colors)
 
@@ -155,7 +155,7 @@ def display(shape):
         # color = shader(face)
         # color = np.clip(color, 0, 255).astype(np.uint8)
         # rasterize(coords,color,view)
-        rasterize_gouraud(coords,view,zbuffer,face.avNorms,face.points,face.normal)
+        rasterize_phong(coords,view,zbuffer,face.avNorms,face.points,face.normal,(1,1,1))
 
 
 
@@ -164,18 +164,27 @@ def display(shape):
 
 if __name__ == '__main__':
 
-    c = OBJFile("models/Shambler.obj",reverseNormals=False,loadAverageNorms=True)
+    c = OBJFile("models/Hellknight.obj",reverseNormals=False,loadAverageNorms=True)
+
+    t = time()
     pretransformation()
     c.update2dCoords()
     shader = Lambertian()
-    print(c.center)
+
+    print(f"Prefunctioning: {time() - t} seconds")
+    t = time()
+
     while cv.waitKey(20)&0xff != ord('x'):
         view = np.zeros((HEIGHT,WIDTH,3),dtype=np.uint8)
 
         if BENCHMARK: now = time()
 
+        t=time()
+
         display(c)
         cv.imshow("3d Render",view)
+
+        print(f"Display: {time() - t} seconds")
 
         if BENCHMARK: print(f"Displaying:",time()-now,"seconds"); now = time()
 
