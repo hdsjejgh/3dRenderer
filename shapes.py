@@ -55,7 +55,7 @@ class OBJFile():
                         self.textureids.append(tc)
                     elif type == 'vt':
                         items = [float(line[i])*[0,self.width,self.height][i] for i in range(1, 3)]
-                        items[1]=self.height-items[1]
+                        items[-1]=self.height-items[-1]
                         self.texturecoords.append(items)
 
                 except Exception as e:

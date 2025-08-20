@@ -25,7 +25,7 @@ Optimize the display
 
 ~~Add Phong shading~~
 
-Add texture loading
+~~Add texture loading~~
 
 Add support for other file types
 

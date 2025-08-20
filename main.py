@@ -93,12 +93,15 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, normal,color =
 
             if texture.size != 0:
                 tc = alpha * texturecoords[0] + beta * texturecoords[1] + gamma * texturecoords[2]
-                i = int(round(tc[0])) - 1
-                j = int(round(tc[1])) - 1
+
+                i = int(round(tc[1])) - 1
+                j = int(round(tc[0])) - 1
                 i = max(0, min(texture.shape[0] - 1, i))
                 j = max(0, min(texture.shape[1] - 1, j))
-                base = np.asarray(texture[i, j], dtype=np.float64)
 
+                base = np.asarray(texture[i, j], dtype=np.float64)
+                if i== texture.shape[0] - 1 or j == texture.shape[1] - 1 or i==0 or j==0:
+                    base = np.asarray([0,255,0],dtype=np.float64)
 
             if alpha>=0 and beta>=0 and gamma>=0: #if the current point is in the triangle, continue
                 surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
