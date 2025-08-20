@@ -32,17 +32,20 @@ def TransformationLoop():
     #sleep(0.0)
 
 def pretransformation():
-    c.scaleCoords(-2)
+    c.scaleCoords(-3)
     #c.rotateCoords('x',-90)
-    c.shiftCoords('y', -75)
+    # c.shiftCoords('y', -75)
 
 
 
-@numba.njit() #travis oliphant was onto something
-def rasterize_phong(coords, view,zbuffer,av_normals,coords_3d,normal,color = (1,1,1)):
-    red,green,blue = color
-    A, B, C = coords #2D coordinated
-    n1,n2,n3 = av_normals #average normals of the 3 vertices
+@numba.njit()
+def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, normal,color = (255,255,255), texturecoords=None, texture=np.empty((0,0,3))):
+    base = np.array(color, dtype=np.float64)
+    red,green,blue = base
+    A, B, C = coords.astype(np.float64)
+    n1, n2, n3 = [np.asarray(n, dtype=np.float64) for n in av_normals]
+    coords_3d = coords_3d.astype(np.float64)
+    base = np.array(color,dtype=np.float64)
     #The 3d coordinated
     x1, y1, z1 = coords_3d[0]
     x2, y2, z2 = coords_3d[1]
@@ -88,6 +91,15 @@ def rasterize_phong(coords, view,zbuffer,av_normals,coords_3d,normal,color = (1,
             beta = beta_0 + (x - min_x) * dbeta_x + (y - min_y) * dbeta_y
             gamma = 1 - alpha - beta
 
+            if texture.size != 0:
+                tc = alpha * texturecoords[0] + beta * texturecoords[1] + gamma * texturecoords[2]
+                i = int(round(tc[0])) - 1
+                j = int(round(tc[1])) - 1
+                i = max(0, min(texture.shape[0] - 1, i))
+                j = max(0, min(texture.shape[1] - 1, j))
+                base = np.asarray(texture[i, j], dtype=np.float64)
+
+
             if alpha>=0 and beta>=0 and gamma>=0: #if the current point is in the triangle, continue
                 surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
@@ -129,12 +141,12 @@ def rasterize_phong(coords, view,zbuffer,av_normals,coords_3d,normal,color = (1,
                 intensity = AMBIENT_INTENSITY + diffuse *255 + specular*255
 
                 #gamma correction
-                intensity = 255.0 * (intensity / 255.0) ** GAMMA
+                intensity = 1 * (intensity / 255.0) ** GAMMA
 
                 #caps intensity just in case
-                intensity = min(intensity, 255.0)
+                intensity = min(intensity, 1.0)
 
-                color = np.array([blue*intensity,green*intensity,red*intensity])
+                color = np.array([base[2]*intensity,base[1]*intensity,base[0]*intensity])
                 view[y, x] = color.astype(np.uint8)
     # print(colors)
 
@@ -145,17 +157,22 @@ def rasterize_phong(coords, view,zbuffer,av_normals,coords_3d,normal,color = (1,
 
 
 def display(shape):
+    if shape.textured:
+        t = shape.texture
+    else: t=False
     global view
     view = np.zeros((HEIGHT, WIDTH, 3),dtype=np.uint8)
     zbuffer = np.full((HEIGHT, WIDTH), np.inf, dtype=np.float64)
     centArray = np.array([WIDTH/2,HEIGHT/2])
     # print(len(shape.validFaces()))
     for face in shape.validFaces():
+        if t is not False: tt = face.texturepoints
+        else: tt=None
         coords = face.TwoDCoords+centArray
         # color = shader(face)
         # color = np.clip(color, 0, 255).astype(np.uint8)
         # rasterize(coords,color,view)
-        rasterize_phong(coords,view,zbuffer,face.avNorms,face.points,face.normal,(1,1,1))
+        rasterize_phong(coords,view,zbuffer,face.avNorms,face.points,face.normal,(255,255,255),texturecoords=tt,texture=t)
 
 
 
@@ -164,7 +181,8 @@ def display(shape):
 
 if __name__ == '__main__':
 
-    c = OBJFile("models/Hellknight.obj",reverseNormals=False,loadAverageNorms=True)
+    c = OBJFile("models/Shambler.obj",reverseNormals=False,loadAverageNorms=True,texture="textures/Shambler.png")
+
 
     t = time()
     pretransformation()

@@ -4,8 +4,8 @@ import math
 from parameters import *
 import numpy as np
 from time import time
-from multiprocessing import Pool
 import numba
+from PIL import Image
 from collections import defaultdict
 
 def sin(deg: int|float) -> float: #sine function for degrees
@@ -14,9 +14,19 @@ def cos(deg: int|float) -> float: #cosine function for degrees
     return math.cos((deg*math.pi)/180)
 
 class OBJFile():
-    def __init__(self,filepath, reverseNormals=False, loadAverageNorms=False, *args, **kwargs):
+    def __init__(self,filepath, reverseNormals=False, loadAverageNorms=False,texture=None, *args, **kwargs):
         self.coords = []
         self.faces = []
+        self.textured = False if texture is None else True
+        if self.textured:
+            self.texturecoords = []
+            self.texture = Image.open(texture)
+            self.texture = np.array(self.texture)
+            print(self.texture)
+            self.height = self.texture.shape[0]
+            self.width = self.texture.shape[1]
+            self.textureids = []
+
 
         self.reverseNormals = reverseNormals
         t = time()
@@ -37,19 +47,30 @@ class OBJFile():
                         items = line[1:]
                         items = list(map(lambda x: x.split('/'),items))
                         face = []
+                        tc = []
                         for i in items:
                             face.append(int(i[0])-1)
+                            tc.append(int(i[1]) - 1)
                         self.faces.append(face)
+                        self.textureids.append(tc)
+                    elif type == 'vt':
+                        items = [float(line[i])*[0,self.width,self.height][i] for i in range(1, 3)]
+                        items[1]=self.height-items[1]
+                        self.texturecoords.append(items)
+
                 except Exception as e:
-                    print("ERROr")
+                    print("ERROR")
                     exit()
         print(f"Loading: {time()-t} seconds")
         t = time()
         self.coords = np.array(self.coords)
         self.faces = np.array(self.faces)
-
         #print(self.coords)
-        self.faces = [self.face(self,self.faces[i],i) for i in range(len(self.faces))]
+        if self.textured:
+            self.texturecoords = np.array(self.texturecoords)
+            self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i]) for i in range(len(self.faces))]
+        else:
+            self.faces = [self.face(self, self.faces[i], i) for i in range(len(self.faces))]
 
         print(f"Faces: {time() - t} seconds")
         t = time()
@@ -71,13 +92,19 @@ class OBJFile():
         t = time()
 
     class face:
-        def __init__(self,outerInstance, indices, id):
+        def __init__(self,outerInstance, indices, id,textureids=None):
+            textured = False if textureids is None else True
             reverse = outerInstance.reverseNormals
             self.id=id
             self.indices = np.array(indices)
+
+            if textured:
+                self.tids = np.array(textureids,dtype=np.int16)
+                self.texturepoints = outerInstance.texturecoords[self.tids]
             c = -1 if outerInstance.reverseNormals else 1
             self.outerInstance = outerInstance
             self.z = np.mean(outerInstance.coords[indices, 2])
+
             self.points = self.outerInstance.coords[indices]
             denominator = self.points[:, 2] + FOV
             self.TwoDCoords = np.stack((self.points[:, 0] * FOV / denominator,self.points[:, 1] * FOV / denominator), axis=1)
@@ -131,7 +158,7 @@ class OBJFile():
 
     def validFaces(self):
         #for some reason, backface culling does not want to work well for some faces
-        return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-2, self.faces))
+        return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1, self.faces))
 
     def rotateCoords(self,axis: str,  angle:int|float): #rotates coordinates
 
