@@ -10,7 +10,7 @@ CAMERA_POS = np.array([0,0,-50],dtype = 'float64')
 LIGHT_POS = np.array([30,30,0],dtype = 'float64')
 LIGHT_VECTOR = -LIGHT_POS/np.linalg.norm(LIGHT_POS)
 # REFLECTION_VECTOR = np.array([1/math.sqrt(3),1/math.sqrt(3),-1/math.sqrt(3)],dtype='float64')
-PHONG_EXPONENT = 20
+PHONG_EXPONENT = 10
 REFLECTIVITY_CONSTANT = 1
 AMBIENT_INTENSITY = 0.25*255
 ZBUFF = False

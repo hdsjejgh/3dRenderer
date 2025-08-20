@@ -18,6 +18,7 @@ class OBJFile():
         self.coords = []
         self.faces = []
         self.textured = False if texture is None else True
+
         if self.textured:
             self.texturecoords = []
             self.texture = Image.open(texture)
@@ -32,7 +33,7 @@ class OBJFile():
         t = time()
         with open(filepath, "r") as file:
             for line in file:
-                try:
+                # try:
                     line = line.split()
                     if len(line)<1:
                         continue
@@ -50,17 +51,17 @@ class OBJFile():
                         tc = []
                         for i in items:
                             face.append(int(i[0])-1)
-                            tc.append(int(i[1]) - 1)
+                            if self.textured: tc.append(int(i[1]) - 1)
                         self.faces.append(face)
-                        self.textureids.append(tc)
-                    elif type == 'vt':
+                        if self.textured: self.textureids.append(tc)
+                    elif type == 'vt' and self.textured:
                         items = [float(line[i])*[0,self.width,self.height][i] for i in range(1, 3)]
                         items[-1]=self.height-items[-1]
                         self.texturecoords.append(items)
 
-                except Exception as e:
-                    print("ERROR")
-                    exit()
+                # except Exception as e:
+                #     print("ERROR", e)
+                #     exit()
         print(f"Loading: {time()-t} seconds")
         t = time()
         self.coords = np.array(self.coords)
