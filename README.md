@@ -27,15 +27,17 @@ Optimize the display
 
 ~~Add texture loading~~
 
+Add mouse and keyboard controls
+
 Add support for other file types
 
 Support 4 dimensions
 # #
-### Simple 3d model display ###
-![](https://github.com/hdsjejgh/3dRenderer/blob/136cd10758a078b865bb4f9022f190069a261a52/media/mokey.gif)
-### Large 3d model display ###
-![](https://github.com/hdsjejgh/3dRenderer/blob/136cd10758a078b865bb4f9022f190069a261a52/media/hekewjigwke.gif)
-### Phong Shading (Unoptimized) ###
-![](https://github.com/hdsjejgh/3dRenderer/blob/c584651f165a455471776cd167fb68851268dc39/media/phong.gif)
+### Simple 3d model with Phong Lighting ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/phongkey.gif)
+### Large 3d model with Phong Lighting ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/hellkn.gif)
+### Textured 3d model with Phong Lighting (beta) ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/texturesworking.gif)
 
 
