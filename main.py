@@ -12,7 +12,7 @@ import cv2 as cv
 import numba
 
 
-Model = OBJFile("models/Shambler.obj",reverseNormals=False,loadAverageNorms=True,texture="textures/Shambler.png")
+Model = OBJFile("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
 
 
 def TransformationLoop():

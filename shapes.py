@@ -1,6 +1,3 @@
-from abc import ABC, abstractmethod
-import math
-#from main import FOV
 from parameters import *
 import numpy as np
 from time import time
@@ -14,16 +11,18 @@ def cos(deg: int|float) -> float: #cosine function for degrees
     return math.cos((deg*math.pi)/180)
 
 class OBJFile():
-    def __init__(self,filepath, reverseNormals=False, loadAverageNorms=False,texture=None, *args, **kwargs):
+    def __init__(self,filepath, reverseNormals=False,texture=None, *args, **kwargs):
         self.coords = []
         self.faces = []
+        self.vertexnormals = []
+        self.vnids = []
+        self.vnloaded = False
         self.textured = False if texture is None else True
 
         if self.textured:
             self.texturecoords = []
             self.texture = Image.open(texture)
             self.texture = np.array(self.texture)
-            print(self.texture)
             self.height = self.texture.shape[0]
             self.width = self.texture.shape[1]
             self.textureids = []
@@ -48,16 +47,23 @@ class OBJFile():
                         items = line[1:]
                         items = list(map(lambda x: x.split('/'),items))
                         face = []
+                        vn = []
                         tc = []
                         for i in items:
                             face.append(int(i[0])-1)
+                            vn.append(int(i[2])-1)
                             if self.textured: tc.append(int(i[1]) - 1)
                         self.faces.append(face)
+                        self.vnids.append(vn)
                         if self.textured: self.textureids.append(tc)
                     elif type == 'vt' and self.textured:
                         items = [float(line[i])*[0,self.width,self.height][i] for i in range(1, 3)]
                         items[-1]=self.height-items[-1]
                         self.texturecoords.append(items)
+                    elif type == 'vn':
+                        self.vnloaded = True
+                        items = [float(line[i]) for i in range(1, 4)]
+                        self.vertexnormals.append(items)
 
                 # except Exception as e:
                 #     print("ERROR", e)
@@ -65,13 +71,21 @@ class OBJFile():
         print(f"Loading: {time()-t} seconds")
         t = time()
         self.coords = np.array(self.coords)
+        self.vertexnormals = np.array(self.vertexnormals)
         self.faces = np.array(self.faces)
         #print(self.coords)
-        if self.textured:
-            self.texturecoords = np.array(self.texturecoords)
-            self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i]) for i in range(len(self.faces))]
+        if not self.vnloaded:
+            if self.textured:
+                self.texturecoords = np.array(self.texturecoords)
+                self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i]) for i in range(len(self.faces))]
+            else:
+                self.faces = [self.face(self, self.faces[i], i) for i in range(len(self.faces))]
         else:
-            self.faces = [self.face(self, self.faces[i], i) for i in range(len(self.faces))]
+            if self.textured:
+                self.texturecoords = np.array(self.texturecoords)
+                self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i],vn=self.vnids[i]) for i in range(len(self.faces))]
+            else:
+                self.faces = [self.face(self, self.faces[i], i,vn=self.vnids[i]) for i in range(len(self.faces))]
 
         print(f"Faces: {time() - t} seconds")
         t = time()
@@ -84,8 +98,7 @@ class OBJFile():
         print(f"Mapping: {time() - t} seconds")
         t = time()
 
-        if loadAverageNorms:
-
+        if not self.vnloaded:
             self.get_borders()
         self.center = self.cc()
 
@@ -93,7 +106,7 @@ class OBJFile():
         t = time()
 
     class face:
-        def __init__(self,outerInstance, indices, id,textureids=None):
+        def __init__(self,outerInstance, indices, id,textureids=None,vn=False):
             textured = False if textureids is None else True
             reverse = outerInstance.reverseNormals
             self.id=id
@@ -102,17 +115,23 @@ class OBJFile():
             if textured:
                 self.tids = np.array(textureids,dtype=np.int16)
                 self.texturepoints = outerInstance.texturecoords[self.tids]
-            c = -1 if outerInstance.reverseNormals else 1
             self.outerInstance = outerInstance
             self.z = np.mean(outerInstance.coords[indices, 2])
 
             self.points = self.outerInstance.coords[indices]
             denominator = self.points[:, 2] + FOV
             self.TwoDCoords = np.stack((self.points[:, 0] * FOV / denominator,self.points[:, 1] * FOV / denominator), axis=1)
-            p0,p1,p2 = outerInstance.coords[indices[:3]]
-            v1 = p0-p1
-            v2 = p2-p1
-            self.normal = np.cross(v1,v2)
+
+            if vn == False:
+                p0,p1,p2 = outerInstance.coords[indices[:3]]
+                v1 = p0-p1
+                v2 = p2-p1
+                self.normal = np.cross(v1,v2)
+            else:
+                self.avNorms = outerInstance.vertexnormals[vn]
+                s = sum(self.avNorms)
+                self.normal = s/3
+
             if reverse:
                 self.normal*=-1
             self.normal /= np.linalg.norm(self.normal)
@@ -159,13 +178,12 @@ class OBJFile():
 
     def validFaces(self):
         #for some reason, backface culling does not want to work well for some faces
-        return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1, self.faces))
+        return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-3, self.faces))
 
     def rotateCoords(self,axis: str,  angle:int|float): #rotates coordinates
 
         axis = axis.lower()
         assert axis in ('x','y','z'), "Invalid axis, Axis must be 'x','y', or 'z'"
-        c1,c2,c3 = self.center
         sa,ca = sin(angle),cos(angle)
 
         # Rotation Matrix about X axis
