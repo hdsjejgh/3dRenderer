@@ -251,14 +251,20 @@ class OBJFile():
 
     #Returns valid faces with regard to backface culling
     def validFaces(self):
-        #for some reason, backface culling does not want to work well for some faces
+        #for some reason, backface culling does not want to work well, so
         return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-1, self.faces))
 
-    #Rotates coordinates about a certain axis
+    #Rotates coordinates about a certain axis at its visual center
     def rotateCoords(self,axis: str,  angle:int|float):
+        #Axis will be x,y, or z to rotate around the x,y, or z axis
+        #x = left to right
+        #y = down to up
+        #z = back to front
 
         axis = axis.lower()
         assert axis in ('x','y','z'), "Invalid axis, Axis must be 'x','y', or 'z'"
+
+        #Sin and cosine of angle precomputed just for minor speedups
         sa,ca = sin(angle),cos(angle)
 
         # Rotation Matrix about X axis
@@ -279,13 +285,15 @@ class OBJFile():
         # |-sin(angle) cos(angle    0      |
         # |     0        0         1      |
 
+        #Forms rotational matrix based on the above
         if axis == 'x':
             rotMat = np.array([[1,0,0],[0,ca,-sa],[0,sa,ca]])
         elif axis == 'y':
             rotMat = np.array([[ca,0,sa],[0,1,0],[-sa,0,ca]])
-        else:
+        elif axis == 'z':
             rotMat = np.array([[ca,sa,0],[-sa,ca,0],[0,0,1]])
 
+        #Shifts coordinates to center, rotates, then unshifts them
         shifted = self.coords - self.center
         shifted = shifted @ rotMat.T
         self.coords = shifted+self.center
@@ -293,81 +301,47 @@ class OBJFile():
         #Rotates the normals
         for idx,face in enumerate(self.faces):
             face.normal = face.normal @ rotMat.T
-            try:
-                face.avNorms = face.avNorms @ rotMat.T
-            except:
-                pass
+            face.avNorms = face.avNorms @ rotMat.T
 
     #Matrix based transformations
     def matrixTransform(self,matrix):
         arr = np.array(matrix)
 
+        #Shifts coordinates to center, rotates, then unshifts them
         shifted = self.coords - self.center
         shifted = shifted @ arr.T
         self.coords = shifted+self.center
 
         for idx,face in enumerate(self.faces):
             face.normal = face.normal @ arr.T
-            try:
-                face.avNorms = face.avNorms @ arr.T
-            except:
-                pass
+            face.avNorms = face.avNorms @ arr.T
 
     #Just shifts the object's coordinates
-    def shiftCoords(self, axis: str, amount:int|float,coords=None):
-        if coords is None: #if no coords given, use object's coords
-            coords = self.coords.copy()
+    def shiftCoords(self, axis: str, amount:int|float):
+        # Axis will be x,y, or z to shift in the x,y, or z direction
+        # x = left to right
+        # y = down to up
+        # z = back to front
 
         axis = axis.lower()
         assert axis in ('x', 'y', 'z'), "Invalid axis, Axis must be 'x','y', or 'z'"
         axis = {'x':0,'y':1,'z':2}[axis]
-        for idx,triple in enumerate(coords):
-            coords[idx][axis] = triple[axis]+amount
-        self.coords = coords
-        self.center = self.cc()
+
+        shift = np.array([0,0,0])
+        shift[axis]=amount
+
+        self.coords += shift
+        self.center += shift
 
     #Scales coordinates about the visual center of the model
     def scaleCoords(self, amount:int|float):
-        coords = self.coords
-        c1 = self.center[0]
-        c2 = self.center[1]
-        c3 = self.center[2]
-        for idx, triple in enumerate(coords):
-            x = triple[0]
-            y = triple[1]
-            z = triple[2]
-            t = triple.copy()
-            t[0] = amount*(t[0]-c1)+c1
-            t[1] = amount * (t[1] - c2) + c2
-            t[2] = amount * (t[2] - c3) + c3
-            coords[idx] = t
-        self.coords=coords
+        scale = np.array([amount]*3)
+
+        shifted = self.coords-self.center
+        shifted*= scale
+        self.coords = shifted + self.center
 
 
-@numba.njit()
-def rasterize(coords, color, view):
-    A, B, C = coords
-
-    #Used for the bounding box
-    min_x = max(int(min(A[0], B[0], C[0])), 0)
-    max_x = min(int(max(A[0], B[0], C[0])) + 1, view.shape[1])
-    min_y = max(int(min(A[1], B[1], C[1])), 0)
-    max_y = min(int(max(A[1], B[1], C[1])) + 1, view.shape[0])
-
-    #area of triangle
-    area = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
-    if area == 0:
-        return
-
-    for y in range(min_y, max_y):
-        for x in range(min_x, max_x):
-            #barycentric coordinates are the goat
-            w0 = (B[0] - A[0]) * (y - A[1]) - (B[1] - A[1]) * (x - A[0])
-            w1 = (C[0] - B[0]) * (y - B[1]) - (C[1] - B[1]) * (x - B[0])
-            w2 = (A[0] - C[0]) * (y - C[1]) - (A[1] - C[1]) * (x - C[0])
-
-            if (w0 >= 0 and w1 >= 0 and w2 >= 0) or (w0 <= 0 and w1 <= 0 and w2 <= 0):
 
 
-                view[y, x] = color
 

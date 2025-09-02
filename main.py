@@ -16,9 +16,13 @@ def pretransformation():
 
 #What transformations to apply to the model every frame
 def TransformationLoop():
+
     #Model.rotateCoords('x', 4)
     Model.rotateCoords('y', -3)
     #Model.rotateCoords('z', 7)
+    #Model.scaleCoords(1.01)
+
+
 
 #Display function for nontextured phong
 #Separated just for clarity
@@ -89,6 +93,7 @@ def display_phong_textured(model):
                 texturecoords=texture_points,
                 texture=texture
         )
+
 
 
 if __name__ == '__main__':

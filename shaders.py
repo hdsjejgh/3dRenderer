@@ -46,6 +46,35 @@ def Gouraud():
         return color
     return wrapper
 
+#Primitive rasterizer
+#Now defunct
+@numba.njit()
+def rasterize(coords, color, view):
+    #2d Coordinates of vertices
+    A, B, C = coords
+
+    #Used for the bounding box
+    min_x = max(int(min(A[0], B[0], C[0])), 0)
+    max_x = min(int(max(A[0], B[0], C[0])) + 1, view.shape[1])
+    min_y = max(int(min(A[1], B[1], C[1])), 0)
+    max_y = min(int(max(A[1], B[1], C[1])) + 1, view.shape[0])
+
+    #area of the 2d triangle
+    area = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
+    if area == 0:
+        return
+
+    for y in range(min_y, max_y):
+        for x in range(min_x, max_x):
+            #berycentric weights based on 2d projection
+            w0 = (B[0] - A[0]) * (y - A[1]) - (B[1] - A[1]) * (x - A[0])
+            w1 = (C[0] - B[0]) * (y - B[1]) - (C[1] - B[1]) * (x - B[0])
+            w2 = (A[0] - C[0]) * (y - C[1]) - (A[1] - C[1]) * (x - C[0])
+
+            if (w0 >= 0 and w1 >= 0 and w2 >= 0) or (w0 <= 0 and w1 <= 0 and w2 <= 0):
+                #If point in triangle
+                view[y, x] = color
+
 
 #Operational Fragment Shaders
 

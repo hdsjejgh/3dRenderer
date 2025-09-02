@@ -19,15 +19,13 @@ The entire 3d rendering pipeline is implemented. It loads OBJ files, performs tr
 
 ~~Add a Z Buffer~~
 
-~~Refactor the messy code~~ (all of it)
+~~Refactor the messy code (all of it)~~
 
-Optimize the display
+Optimize the display more
 
 ~~Add Phong shading~~
 
 ~~Add texture loading~~
-
-Add mouse and keyboard controls
 
 Add a dynamic camera system
 
