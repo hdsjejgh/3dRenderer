@@ -29,9 +29,11 @@ Optimize the display
 
 Add mouse and keyboard controls
 
+Add a dynamic camera system
+
 Add support for other file types
 
-Support 4 dimensions
+Support 4 dimensions (??)
 # #
 ### Simple 3d model with Phong Lighting ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/phongkey.gif)
