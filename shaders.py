@@ -184,7 +184,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
                 # )
 
                 #While i was cleaning up i tried again and it works just fine now???
-                diffuse = max(interpolated_normal.dot(light_dir), 0)
+                diffuse = max(interpolated_normal.dot(-light_dir), 0)
 
                 #(What was bui tuong phong on about??)
                 #Calculates reflection direction vector

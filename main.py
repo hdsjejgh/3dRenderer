@@ -125,7 +125,7 @@ if __name__ == '__main__':
         LIGHT2Dy = int((parameters.LIGHT_POS[1] * parameters.FOV) / (parameters.LIGHT_POS[2] + parameters.FOV) + parameters.HEIGHT / 2)
 
 
-        lights = [(LIGHT2Dx,LIGHT2Dy),(LIGHT2Dx,LIGHT2Dy+1),(LIGHT2Dx,LIGHT2Dy-1),(LIGHT2Dx+1,LIGHT2Dy),(LIGHT2Dx-1,LIGHT2Dy),]
+        lights = [(LIGHT2Dx+i,LIGHT2Dy+j) for i in range(-2,3) for j in range(-2,3)]
         for x,y in lights:
             if 0<=x<parameters.WIDTH and 0<=y<parameters.HEIGHT:
                 view[y, x] = np.array([0, 255, 0]).astype(np.uint8)

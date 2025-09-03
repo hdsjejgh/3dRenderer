@@ -19,7 +19,7 @@ VIEW_VECTOR = np.array([0,0,1],dtype = 'float64')
 #Technically not what it actually is in the display (its closer to <0,0,-200>), but it being closer than it makes the phong lighting look nicer
 CAMERA_POS = np.array([0,0,-200],dtype = 'float64')
 #The light source position vector
-LIGHT_POS = np.array([200,-200,0],dtype = 'float64')
+LIGHT_POS = np.array([200,-100,0],dtype = 'float64')
 #The light direction vector (set to face the origin)
 LIGHT_VECTOR = -LIGHT_POS/np.linalg.norm(LIGHT_POS)
 
@@ -31,9 +31,9 @@ LIGHT_VECTOR = -LIGHT_POS/np.linalg.norm(LIGHT_POS)
 #Lower = Dispersed shine
 PHONG_EXPONENT = 10
 #Controls overall shine
-REFLECTIVITY_CONSTANT = 2
+REFLECTIVITY_CONSTANT = 3
 #Ambient lighting for phong
-AMBIENT_INTENSITY = 0.25*255
+AMBIENT_INTENSITY = 0.1*255
 #Gamma value for gamma correction
 #Higher = darker base color
 GAMMA = 1
