@@ -15,6 +15,41 @@ def sin(deg: int|float) -> float:
 def cos(deg: int|float) -> float:
     return math.cos((deg*math.pi)/180)
 
+def rot_matrix(axis,deg):
+    axis = axis.lower()
+    assert axis in ('x', 'y', 'z'), "Invalid axis, Axis must be 'x','y', or 'z'"
+
+    # Sin and cosine of angle precomputed just for minor speedups
+    sa, ca = sin(deg), cos(deg)
+
+    # Rotation Matrix about X axis
+    #
+    # |     1      0          0      |
+    # |     0  cos(angle) -sin(angle)|
+    # |     0  sin(angle) cos(angle) |
+
+    # Rotation Matrix about Y axis
+    #
+    # | cos(angle) 0 sin(angle) |
+    # |     0      1     0      |
+    # |-sin(angle) 0 cos(angle) |
+
+    # Rotation Matrix about Z axis
+    #
+    # |cos(angle) sin(angle)   0      |
+    # |-sin(angle) cos(angle    0      |
+    # |     0        0         1      |
+
+    # Forms rotational matrix based on the above
+    if axis == 'x':
+        rotMat = np.array([[1, 0, 0], [0, ca, -sa], [0, sa, ca]])
+    elif axis == 'y':
+        rotMat = np.array([[ca, 0, sa], [0, 1, 0], [-sa, 0, ca]])
+    elif axis == 'z':
+        rotMat = np.array([[ca, sa, 0], [-sa, ca, 0], [0, 0, 1]])
+
+    return rotMat
+
 
 #Class for loading a .obj 3d model
 class OBJFile():
@@ -261,37 +296,7 @@ class OBJFile():
         #y = down to up
         #z = back to front
 
-        axis = axis.lower()
-        assert axis in ('x','y','z'), "Invalid axis, Axis must be 'x','y', or 'z'"
-
-        #Sin and cosine of angle precomputed just for minor speedups
-        sa,ca = sin(angle),cos(angle)
-
-        # Rotation Matrix about X axis
-        #
-        # |     1      0          0      |
-        # |     0  cos(angle) -sin(angle)|
-        # |     0  sin(angle) cos(angle) |
-
-        # Rotation Matrix about Y axis
-        #
-        # | cos(angle) 0 sin(angle) |
-        # |     0      1     0      |
-        # |-sin(angle) 0 cos(angle) |
-
-        # Rotation Matrix about Z axis
-        #
-        # |cos(angle) sin(angle)   0      |
-        # |-sin(angle) cos(angle    0      |
-        # |     0        0         1      |
-
-        #Forms rotational matrix based on the above
-        if axis == 'x':
-            rotMat = np.array([[1,0,0],[0,ca,-sa],[0,sa,ca]])
-        elif axis == 'y':
-            rotMat = np.array([[ca,0,sa],[0,1,0],[-sa,0,ca]])
-        elif axis == 'z':
-            rotMat = np.array([[ca,sa,0],[-sa,ca,0],[0,0,1]])
+        rotMat = rot_matrix(axis,angle)
 
         #Shifts coordinates to center, rotates, then unshifts them
         shifted = self.coords - self.center

@@ -1,5 +1,5 @@
 import random
-from parameters import *
+import parameters
 import numpy as np
 import numba
 import math
@@ -33,7 +33,7 @@ def distShader(mult=0.05,base=(255,255,255)): #Mult controls steepness of sigmoi
 #Now defunct
 def Lambertian():
     def wrapper(face):
-        return np.array([205*(np.dot(VIEW_VECTOR,face.normal))**2+50]*3, dtype=np.uint8)
+        return np.array([205*(np.dot(parameters.VIEW_VECTOR,face.normal))**2+50]*3, dtype=np.uint8)
     return wrapper
 
 #Gouraud shader
@@ -41,7 +41,7 @@ def Lambertian():
 def Gouraud():
     def wrapper(point,params,points3d,normals):
         dists = np.linalg.norm(points3d - point, axis=1)
-        colors = [np.array([205*(np.dot(VIEW_VECTOR,normal))**2+50]*3, dtype=np.uint8) for normal in normals]
+        colors = [np.array([205*(np.dot(parameters.VIEW_VECTOR,normal))**2+50]*3, dtype=np.uint8) for normal in normals]
         color = sum(colors[i]/dists[i] for i in range(3))*np.mean(dists)
         return color
     return wrapper
@@ -81,7 +81,7 @@ def rasterize(coords, color, view):
 #Textured Phong shader
 #Has to be separated from nontextured phong because numba likes being difficult
 @numba.njit() #Numba used to provide massive speedups
-def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, texturecoords=None, texture=np.empty((1,1),np.int64)):
+def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, texturecoords=None, texture=np.empty((1,1),np.int64),LIGHT_POS=parameters.LIGHT_POS, LIGHT_VECTOR=parameters.LIGHT_VECTOR):
     #All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float64)
     #Vertex normals of the 3 vertices
@@ -125,7 +125,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
     d2 = max(n2.dot(LIGHT_VECTOR), 0)
     d3 = max(n3.dot(LIGHT_VECTOR), 0)
 
-
+    #print(LIGHT_POS)
 
     for y in range(min_y, max_y): #Iterates over y coordinates top to bottm
         for x in range(min_x, max_x): #Iterates over x coordinates left to right
@@ -156,7 +156,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
                 #Finds the 2d coordinate projected onto the 3d face
                 surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
-                if ZBUFF: #Zbuffers if enabled
+                if parameters.ZBUFF: #Zbuffers if enabled
                     #Skips point if closer point already drawn over it
                     Z = surface_point[2]
                     if Z >= zbuffer[y, x]:
@@ -172,7 +172,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
                 light_dir /= np.sqrt(np.dot(light_dir, light_dir))
 
                 #Direction from the point to global camera position
-                view_dir = CAMERA_POS - surface_point
+                view_dir = parameters.CAMERA_POS - surface_point
                 view_dir /= np.sqrt(np.dot(view_dir, view_dir))
 
                 #The Diffuse lighting
@@ -195,14 +195,14 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
                 spec_angle = max(0.0, np.dot(reflect_dir, view_dir))
 
                 #Specular highlight calculated
-                specular = REFLECTIVITY_CONSTANT * (spec_angle ** PHONG_EXPONENT)
+                specular = parameters.REFLECTIVITY_CONSTANT * (spec_angle ** parameters.PHONG_EXPONENT)
 
                 #Final lighting intensity
-                intensity = AMBIENT_INTENSITY + diffuse *255 + specular*255
+                intensity = parameters.AMBIENT_INTENSITY + diffuse *255 + specular*255
 
                 #Gamma correction
                 #Also puts intensity in unit range
-                intensity = (intensity / 255.0) ** GAMMA
+                intensity = (intensity / 255.0) ** parameters.GAMMA
                 intensity = min(intensity, 1.0)
 
                 #Final color calculated based on the color of pixel and intensity of pixel
@@ -213,7 +213,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
 #Nontextured Phong shader
 #Has to be separated from textured phong because numba likes being difficult
 @numba.njit()
-def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,255,255)):
+def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,255,255),LIGHT_POS=parameters.LIGHT_POS, LIGHT_VECTOR=parameters.LIGHT_VECTOR):
     # All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float64)
     # Vertex normals of the 3 vertices
@@ -269,7 +269,7 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 # Finds the 2d coordinate projected onto the 3d face
                 surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
-                if ZBUFF:  # Zbuffers if enabled
+                if parameters.ZBUFF:  # Zbuffers if enabled
                     # Skips point if closer point already drawn over it
                     Z = surface_point[2]
                     if Z >= zbuffer[y, x]:
@@ -285,7 +285,7 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 light_dir /= np.sqrt(np.dot(light_dir, light_dir))
 
                 # Direction from the point to global camera position
-                view_dir = CAMERA_POS - surface_point
+                view_dir = parameters.CAMERA_POS - surface_point
                 view_dir /= np.sqrt(np.dot(view_dir, view_dir))
 
                 # The Diffuse lighting
@@ -308,14 +308,14 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 spec_angle = max(0.0, np.dot(reflect_dir, view_dir))
 
                 # Specular highlight calculated
-                specular = REFLECTIVITY_CONSTANT * (spec_angle ** PHONG_EXPONENT)
+                specular = parameters.REFLECTIVITY_CONSTANT * (spec_angle ** parameters.PHONG_EXPONENT)
 
                 # Final lighting intensity
-                intensity = AMBIENT_INTENSITY + diffuse * 255 + specular * 255
+                intensity = parameters.AMBIENT_INTENSITY + diffuse * 255 + specular * 255
 
                 # Gamma correction
                 # Also puts intensity in unit range
-                intensity = (intensity / 255.0) ** GAMMA
+                intensity = (intensity / 255.0) ** parameters.GAMMA
                 intensity = min(intensity, 1.0)
 
                 # Final color calculated based on the color of pixel and intensity of pixel
