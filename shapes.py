@@ -290,18 +290,23 @@ class OBJFile():
         return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-1, self.faces))
 
     #Rotates coordinates about a certain axis at its visual center
-    def rotateCoords(self,axis: str,  angle:int|float):
+    def rotateCoords(self,axis: str,  angle:int|float, selfcc=True):
         #Axis will be x,y, or z to rotate around the x,y, or z axis
         #x = left to right
         #y = down to up
         #z = back to front
 
+        #selfcc is whether to rotate about its own center coordinates as opposed to the global origin
+
         rotMat = rot_matrix(axis,angle)
 
-        #Shifts coordinates to center, rotates, then unshifts them
-        shifted = self.coords - self.center
-        shifted = shifted @ rotMat.T
-        self.coords = shifted+self.center
+        #Shifts coordinates to center (if selfcc is true), rotates, then unshifts them
+        if selfcc:
+            shifted = self.coords - self.center
+            shifted = shifted @ rotMat.T
+            self.coords = shifted+self.center
+        else:
+            self.coords = self.coords @ rotMat.T
 
         #Rotates the normals
         for idx,face in enumerate(self.faces):
