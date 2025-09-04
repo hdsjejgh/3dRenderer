@@ -1,13 +1,44 @@
-import numpy as np
-
-import parameters
 from shapes import *
 from shaders import *
 import cv2 as cv
 #-----------------------------------------------#
 
+cv.namedWindow("3d Render")
+
+prevx,prevy = -1,-1
+
+def mouse_callback(event, x, y, *args):
+    global prevx,prevy
+
+    if event == cv.EVENT_LBUTTONDOWN:
+        prevx,prevy = x,y
+    elif event == cv.EVENT_LBUTTONUP:
+        prevx,prevy = -1,-1
+    elif event == cv.EVENT_MOUSEMOVE:
+        if prevx!=-1 and prevy !=-1:
+            dx = x-prevx
+            dy = y-prevy
+            prevx = x
+            prevy = y
+
+            lightRot('y',(-dx/parameters.WIDTH)*180)
+            Model.rotateCoords('y',(-dx/parameters.WIDTH)*180)
+
+            lightRot('x', (dy / parameters.HEIGHT) * 180)
+            Model.rotateCoords('x', (dy / parameters.HEIGHT) * 180)
+
+            Model.update2dCoords()
+
+
+cv.setMouseCallback("3d Render",mouse_callback)
+
 #The model loaded
 Model = OBJFile("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
+
+def lightRot(axis,deg):
+    parameters.LIGHT_POS[:] = rot_matrix(axis, deg) @ parameters.LIGHT_POS
+    parameters.LIGHT_VECTOR[:] = -parameters.LIGHT_POS / np.linalg.norm(parameters.LIGHT_POS)
+
 
 #Transformations to be done to the model before anything
 def pretransformation():
@@ -17,12 +48,12 @@ def pretransformation():
 
 #What transformations to apply to the model every frame
 def TransformationLoop():
-    parameters.LIGHT_POS[:] = rot_matrix('y', 2) @ parameters.LIGHT_POS
-    parameters.LIGHT_VECTOR[:] = -parameters.LIGHT_POS / np.linalg.norm(parameters.LIGHT_POS)
+    pass
+    #lightRot('y',2)
     #print(parameters.LIGHT_POS)
     #print(parameters.LIGHT_POS)
     #Model.rotateCoords('x', 4)
-    #Model.rotateCoords('y', -1)
+    #Model.rotateCoords('y', 2)
     #Model.rotateCoords('z', 7)
     #Model.scaleCoords(1.01)
 
@@ -128,7 +159,7 @@ if __name__ == '__main__':
         lights = [(LIGHT2Dx+i,LIGHT2Dy+j) for i in range(-2,3) for j in range(-2,3)]
         for x,y in lights:
             if 0<=x<parameters.WIDTH and 0<=y<parameters.HEIGHT:
-                view[y, x] = np.array([0, 255, 0]).astype(np.uint8)
+                view[y, x] = np.array([0, 255, 255]).astype(np.uint8)
 
 
         #Updates the view
