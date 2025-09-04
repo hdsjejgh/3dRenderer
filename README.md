@@ -27,7 +27,7 @@ Optimize the display more
 
 ~~Add texture loading~~
 
-Add a dynamic camera system
+~~Add a mouse based movement system~~
 
 Add support for other file types
 
