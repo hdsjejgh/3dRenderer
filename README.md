@@ -1,7 +1,9 @@
 ## 3d Renderer ##
 This is a 3D Renderer made from scratch (no 3d graphics libraries, or graphics APIs)
 
-The whole rendering pipeline is implemented from scratch (Model loading, transformations, per pixel shader calculation, rasterization). As of now, it has the ability to load OBJ files (as well as singular texture files), and perform a variety of transformations on the model (shifting, scaling, rotation, and general matrix transformation) and light source. The renderer has mouse controls, allowing zooming and rotating of the scene. Phong shading and (although now somewhat defunct) Gouraud shading are included. 
+The whole rendering pipeline is implemented from scratch (Model loading, transformations, per pixel shader calculation, rasterization). 
+As of now, it has the ability to load OBJ files (as well as singular texture files), and perform a variety of transformations on the model (shifting, scaling, rotation, and general matrix transformation) and light source. 
+The renderer has mouse controls, allowing zooming and rotating of the scene. Phong shading and (although now somewhat defunct) Gouraud shading are included. 
 
 The renderer can handle a variety OBJ files (although larger files do not perform as well) as seen below.
 
