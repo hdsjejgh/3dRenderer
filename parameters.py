@@ -9,6 +9,8 @@ FPS = 30
 FOV = 250
 #Whether or not to use ZBuffer (A bit finicky)
 ZBUFF = True
+#Whether or not to use Backface Culling
+CULLING = True
 
 
 #Global Vectors

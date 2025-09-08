@@ -121,9 +121,9 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
     dbeta_y = (C[0] - A[0]) / denom
 
     #Diffuse lighting from all 3 average vertices calculated ahead of time to save computation
-    d1 = max(n1.dot(LIGHT_VECTOR), 0)
-    d2 = max(n2.dot(LIGHT_VECTOR), 0)
-    d3 = max(n3.dot(LIGHT_VECTOR), 0)
+    # d1 = max(n1.dot(LIGHT_VECTOR), 0)
+    # d2 = max(n2.dot(LIGHT_VECTOR), 0)
+    # d3 = max(n3.dot(LIGHT_VECTOR), 0)
 
     #print(LIGHT_POS)
 
@@ -322,3 +322,6 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 # The color of the model is converted to BGR from RGB as well
                 color = np.array([base[2] * intensity, base[1] * intensity, base[0] * intensity])
                 view[y, x] = color.astype(np.uint8)
+
+
+

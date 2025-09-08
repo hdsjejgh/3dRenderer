@@ -213,6 +213,8 @@ class OBJFile():
             self.indices = np.array(indices)
             self.points = self.outerInstance.coords[indices]
 
+            self.z = np.sum(self.points[-1:2])/3
+
             if textured:
                 #Gets texture points of each vertex if textured
                 self.tids = np.array(textureids,dtype=np.int16)
@@ -286,8 +288,15 @@ class OBJFile():
 
     #Returns valid faces with regard to backface culling
     def validFaces(self):
-        #for some reason, backface culling does not want to work well, so
-        return tuple(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-1, self.faces))
+        # for some reason, backface culling does not want to work well
+        # probably because of small rounding errors
+        if CULLING:
+            return tuple(sorted(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-1, self.faces),reverse=False))
+        return tuple(sorted(self.faces, reverse=False))
+
+
+    #Linear transformations
+
 
     #Rotates coordinates about a certain axis at its visual center
     def rotateCoords(self,axis: str,  angle:int|float, selfcc=True):
@@ -345,6 +354,7 @@ class OBJFile():
 
     #Scales coordinates about the visual center of the model
     def scaleCoords(self, amount:int|float):
+
         scale = np.array([amount]*3)
 
         shifted = self.coords-self.center
@@ -352,6 +362,48 @@ class OBJFile():
         self.coords = shifted + self.center
 
 
+    #Nonlinear transformations
 
+
+    #Performs a nonlinear twist transformation
+    def twistCoords(self,axis,deg,constant,center=0):
+        #axis is axis of rotation
+        #deg is the base degree of rotation
+        #constant is the twist constant in the degree_final = deg + constant * vector[axis] equation
+        #Farther from the origin (or center) a point is, the more it gets twisted
+
+        #triple nested function :wilted_rose:
+        #ts is orwellian
+
+        #Function that defines the to be vectorized twist function based on the axis
+        def wrapper(axis):
+            axis = axis.lower()
+            #Which component corresponds with the axis
+            index = {'x':0,'y':1,'z':2}[axis]
+
+            def twistMat(vect):
+                #Input a vector, output an appropriately twisted one
+
+                component = vect[index]
+                #the actual angle of rotation based on the twist formula
+                angle = deg+constant*(component-center)
+
+                rot = rot_matrix(axis,angle)
+                return rot @ vect
+
+            #Returns the twist function based on correct axis
+            return twistMat
+
+        #vectorized version of twist function
+        #inputs a vector, outputs a twisted one
+        vectorized = np.vectorize(wrapper(axis),signature='(n)->(n)')
+
+        #Twists coordinates
+        self.coords = vectorized(self.coords)
+
+        #Twists average normals and normals for each face
+        for idx,face in enumerate(self.faces):
+            face.avNorms = vectorized(face.avNorms)
+            face.normal = vectorized(face.normal)
 
 

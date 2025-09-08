@@ -55,7 +55,7 @@ def mouse_callback(event, x, y, flags, params):
 cv.setMouseCallback("3d Render",mouse_callback)
 
 #The model loaded
-Model = OBJFile("models/ZombieFilth.obj",reverseNormals=True,texture="textures/ZombieFilth.png")
+Model = OBJFile("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
 
 #Rotations the light source about a given access (x,y,z) by a given number of degrees
 def lightRot(axis,deg):
@@ -70,16 +70,16 @@ def lightScale(magnitude):
 
 #Transformations to be done to the model before anything
 def pretransformation():
-    Model.scaleCoords(-1)
+    Model.scaleCoords(-3)
     #Model.rotateCoords('x',-90)
-    Model.shiftCoords('y', -75)
+    #Model.shiftCoords('y', -75)
 
 #What transformations to apply to the model every frame
 def TransformationLoop():
     pass
-    lightRot('y',2)
-    #print(parameters.LIGHT_POS)
-    #print(parameters.LIGHT_POS)
+    Model.twistCoords('y',1,0.01,center=100)
+    lightRot('y',1)
+
     #Model.rotateCoords('x', 4)
     #Model.rotateCoords('y', 2)
     #Model.rotateCoords('z', 7)
