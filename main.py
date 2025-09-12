@@ -1,4 +1,3 @@
-import parameters
 from shapes import *
 from shaders import *
 import cv2 as cv
@@ -33,10 +32,10 @@ def mouse_callback(event, x, y, flags, params):
             #Rotations are scaled such that dragging across half the screen rotats the model 90 degrees
 
             lightRot('y',(-dx/parameters.WIDTH)*180)
-            Model.rotateCoords('y',(-dx/parameters.WIDTH)*180,selfcc=False)
+            Model.rotate('y',(-dx/parameters.WIDTH)*180,selfcc=False)
 
             lightRot('x', (dy / parameters.HEIGHT) * 180)
-            Model.rotateCoords('x', (dy / parameters.HEIGHT) * 180,selfcc=False)
+            Model.rotate('x', (dy / parameters.HEIGHT) * 180,selfcc=False)
 
             Model.update2dCoords()
 
@@ -44,11 +43,11 @@ def mouse_callback(event, x, y, flags, params):
     elif event == cv.EVENT_MOUSEWHEEL:
         #If scrolled up
         if flags>0:
-            Model.scaleCoords(1.1)
+            Model.scale(1.1)
             lightScale(1.1)
         #If scrolled down
         elif flags<0:
-            Model.scaleCoords(1/1.1)
+            Model.scale(1/1.1)
             lightScale(1/1.1)
 
 #Sets up mouse callback function
@@ -70,21 +69,17 @@ def lightScale(magnitude):
 
 #Transformations to be done to the model before anything
 def pretransformation():
-    Model.scaleCoords(-3)
-    #Model.rotateCoords('x',-90)
-    #Model.shiftCoords('y', -75)
+    Model.scale(-3)
+    #Model.rotate('x',-90)
+    #Model.shift('y', -75)
 
 #What transformations to apply to the model every frame
 def TransformationLoop():
     pass
-    Model.twistCoords('y',1,0.01,center=100)
+    Model.twist('y',1,0.01,center=100)
+    # Model.twist('x', 1, 0.01, center=100)
+    # Model.twist('z', 1, 0.01, center=100)
     lightRot('y',1)
-
-    #Model.rotateCoords('x', 4)
-    #Model.rotateCoords('y', 2)
-    #Model.rotateCoords('z', 7)
-    #Model.scaleCoords(1.01)
-
 
 
 #Display function for nontextured phong

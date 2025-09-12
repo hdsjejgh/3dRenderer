@@ -213,6 +213,8 @@ class OBJFile():
             self.indices = np.array(indices)
             self.points = self.outerInstance.coords[indices]
 
+            self.center = sum(self.points)/3
+
             self.z = np.sum(self.points[-1:2])/3
 
             if textured:
@@ -282,6 +284,7 @@ class OBJFile():
         for i, face in enumerate(self.faces):
             face.TwoDCoords = TwoDCoords[i]
             face.points = self.coords[face.indices]
+            face.center = sum(face.points)/3
 
         #Puts faces sorted from back to front
         #self.faces.sort(reverse=True)
@@ -299,7 +302,7 @@ class OBJFile():
 
 
     #Rotates coordinates about a certain axis at its visual center
-    def rotateCoords(self,axis: str,  angle:int|float, selfcc=True):
+    def rotate(self,axis: str,  angle:int|float, selfcc=True):
         #Axis will be x,y, or z to rotate around the x,y, or z axis
         #x = left to right
         #y = down to up
@@ -323,7 +326,7 @@ class OBJFile():
             face.avNorms = face.avNorms @ rotMat.T
 
     #Matrix based transformations
-    def matrixTransform(self,matrix):
+    def matrix_transformation(self,matrix):
         arr = np.array(matrix)
 
         #Shifts coordinates to center, rotates, then unshifts them
@@ -331,12 +334,14 @@ class OBJFile():
         shifted = shifted @ arr.T
         self.coords = shifted+self.center
 
+        arr_inv = np.linalg.inv(arr)
+
         for idx,face in enumerate(self.faces):
-            face.normal = face.normal @ arr.T
-            face.avNorms = face.avNorms @ arr.T
+            face.normal = face.normal @ arr_inv
+            face.avNorms = face.avNorms @ arr_inv
 
     #Just shifts the object's coordinates
-    def shiftCoords(self, axis: str, amount:int|float):
+    def shift(self, axis: str, amount:int|float):
         # Axis will be x,y, or z to shift in the x,y, or z direction
         # x = left to right
         # y = down to up
@@ -352,8 +357,9 @@ class OBJFile():
         self.coords += shift
         self.center += shift
 
+
     #Scales coordinates about the visual center of the model
-    def scaleCoords(self, amount:int|float):
+    def scale(self, amount:int|float):
 
         scale = np.array([amount]*3)
 
@@ -366,44 +372,92 @@ class OBJFile():
 
 
     #Performs a nonlinear twist transformation
-    def twistCoords(self,axis,deg,constant,center=0):
+    def twist(self,axis,deg,constant,center=0):
         #axis is axis of rotation
         #deg is the base degree of rotation
         #constant is the twist constant in the degree_final = deg + constant * vector[axis] equation
         #Farther from the origin (or center) a point is, the more it gets twisted
 
-        #triple nested function :wilted_rose:
+        #nested function :wilted_rose:
         #ts is orwellian
 
-        #Function that defines the to be vectorized twist function based on the axis
-        def wrapper(axis):
-            axis = axis.lower()
-            #Which component corresponds with the axis
-            index = {'x':0,'y':1,'z':2}[axis]
+        axis = axis.lower()
+        #Which component corresponds with the axis
+        index = {'x':0,'y':1,'z':2}[axis]
 
-            def twistMat(vect):
-                #Input a vector, output an appropriately twisted one
+        def twistMat(vect):
+            #Input a vector, output an appropriately twisted one
 
-                component = vect[index]
-                #the actual angle of rotation based on the twist formula
-                angle = deg+constant*(component-center)
+            component = vect[index]
+            #the actual angle of rotation based on the twist formula
+            angle = deg+constant*(component-center)
 
-                rot = rot_matrix(axis,angle)
-                return rot @ vect
+            rot = rot_matrix(axis,angle)
+            return rot @ vect
 
-            #Returns the twist function based on correct axis
-            return twistMat
+        def twist_normal(vect,component):
+            # Input a normal vector, output an appropriately twisted one
+
+            # the actual angle of rotation based on the twist formula
+            angle = deg + constant * (component - center)
+            rot = rot_matrix(axis, angle)
+            return rot @ vect
 
         #vectorized version of twist function
         #inputs a vector, outputs a twisted one
-        vectorized = np.vectorize(wrapper(axis),signature='(n)->(n)')
+        vectorized = np.vectorize(twistMat,signature='(n)->(n)')
 
         #Twists coordinates
         self.coords = vectorized(self.coords)
 
         #Twists average normals and normals for each face
         for idx,face in enumerate(self.faces):
-            face.avNorms = vectorized(face.avNorms)
-            face.normal = vectorized(face.normal)
+            for i in range(3):
+                comp = face.points[i,index]
+                face.avNorms[i] = twist_normal(face.avNorms[i],comp)
+
+            component = face.center[index]
+            face.normal = twist_normal(face.normal,component)
+
+
+    # Performs a nonlinear taper transformation
+    def taper(self, axis, xEquation=None,yEquation=None,zEquation=None):
+
+
+        axis = axis.lower()
+        if axis == 'x':
+            xEquation = "1"
+            assert yEquation is not None and zEquation is not None, "yEquation and zEquation must be provided if tapering about the x-axis"
+        elif axis == 'y':
+            yEquation = "1"
+            assert xEquation is not None and zEquation is not None, "xEquation and zEquation must be provided if tapering about the u-axis"
+        elif axis == 'z':
+            zEquation = "1"
+            assert yEquation is not None and xEquation is not None, "xEquation and yEquation must be provided if tapering about the z-axis"
+        else:
+            raise Exception(f"Invalid axis: {axis}")
+
+        # Which component corresponds with the axis
+        index = {'x': 0, 'y': 1, 'z': 2}[axis]
+
+        def taperMat(vect):
+            # Input a point, output an appropriately twisted one
+
+            c = vect[index]
+
+            mat = np.array([
+                [eval(xEquation),0,0],
+                [0,eval(yEquation),0],
+                [0,0,eval(zEquation)],
+            ])
+
+            return mat @ vect
+
+        # vectorized version of twist function
+        # inputs a vector, outputs a twisted one
+        vectorized = np.vectorize(taperMat, signature='(n)->(n)')
+
+        # Twists coordinates
+        self.coords = vectorized(self.coords)
 
 

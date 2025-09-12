@@ -37,6 +37,12 @@ Optimize the display more
 
 Add nonlinear transformations
 
+Add real-time diagnostics
+
+Add built in recording
+
+Add a real camera system
+
 Add support for other file types
 
 Support 4 dimensions (??)
