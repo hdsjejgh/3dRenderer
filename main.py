@@ -37,7 +37,7 @@ def mouse_callback(event, x, y, flags, params):
             lightRot('x', (dy / parameters.HEIGHT) * 180)
             Model.rotate('x', (dy / parameters.HEIGHT) * 180,selfcc=False)
 
-            Model.update2dCoords()
+            Model.updateFaces()
 
     #If mouse scrolled
     elif event == cv.EVENT_MOUSEWHEEL:
@@ -76,7 +76,7 @@ def pretransformation():
 #What transformations to apply to the model every frame
 def TransformationLoop():
     pass
-    Model.twist('y',1,0.01,center=100)
+    Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
     # Model.twist('z', 1, 0.01, center=100)
     lightRot('y',1)
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     while cv.waitKey(20)&0xff != ord('x'):
 
         #Updates the 2d coordinates to reflect any transformations
-        Model.update2dCoords()
+        Model.updateFaces()
 
         #View variable is actual display (each element is 1 pixel)
         view = np.zeros((HEIGHT,WIDTH,3),dtype=np.uint8)

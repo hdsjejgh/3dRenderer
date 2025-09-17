@@ -268,7 +268,7 @@ class OBJFile():
 
     #Recalculates 2d coordinates for all faces
     #Used after transformations
-    def update2dCoords(self):
+    def updateFaces(self):
         #Updates them all simultaneously using numpy for speed
         #gets the indices, points, and z from each face
         indices = np.array([face.indices for face in self.faces])
@@ -421,29 +421,40 @@ class OBJFile():
 
 
     # Performs a nonlinear taper transformation
-    def taper(self, axis, xEquation=None,yEquation=None,zEquation=None):
-
+    def linear_taper(self, axis, a_constant,a_coeff,b_constant,b_coeff):
+        #(given axis is ignored in transformation)
+        #Transformation matrix is diagonal with a_constant + p_1 * a_coeff for the first non-axis term
+        #and that but b for the second
 
         axis = axis.lower()
         if axis == 'x':
             xEquation = "1"
-            assert yEquation is not None and zEquation is not None, "yEquation and zEquation must be provided if tapering about the x-axis"
+            yEquation = "a_constant + a_coeff*c"
+            zEquation = "b_constant + b_coeff*c"
         elif axis == 'y':
             yEquation = "1"
-            assert xEquation is not None and zEquation is not None, "xEquation and zEquation must be provided if tapering about the u-axis"
+            xEquation = "a_constant + a_coeff*c"
+            zEquation = "b_constant + b_coeff*c"
         elif axis == 'z':
             zEquation = "1"
-            assert yEquation is not None and xEquation is not None, "xEquation and yEquation must be provided if tapering about the z-axis"
+            xEquation = "a_constant + a_coeff*c"
+            yEquation = "b_constant + b_coeff*c"
         else:
             raise Exception(f"Invalid axis: {axis}")
 
         # Which component corresponds with the axis
         index = {'x': 0, 'y': 1, 'z': 2}[axis]
 
-        def taperMat(vect):
-            # Input a point, output an appropriately twisted one
+        def taper(vect):
+            # Input a point, output an appropriately tapered one
 
             c = vect[index]
+
+            # The eval doesn't seem to work unless the parameters are mentioned, this seems to fix it
+            a_constant
+            a_coeff
+            b_constant
+            b_coeff
 
             mat = np.array([
                 [eval(xEquation),0,0],
@@ -453,11 +464,41 @@ class OBJFile():
 
             return mat @ vect
 
+        def taper_normal(vect,component):
+            # Input a normal and corresponding component, output an appropriately tapered one
+
+            c = vect[index]
+
+            #The eval doesn't seem to work unless the parameters are mentioned, this seems to fix it
+            a_constant
+            a_coeff
+            b_constant
+            b_coeff
+
+
+            mat = np.array([
+                [eval(xEquation), 0, 0],
+                [0, eval(yEquation), 0],
+                [0, 0, eval(zEquation)],
+            ])
+
+            #Uses inverse transpose to transform normal
+            mat = np.linalg.inv(mat).T
+
+            return mat @ vect
+
         # vectorized version of twist function
         # inputs a vector, outputs a twisted one
-        vectorized = np.vectorize(taperMat, signature='(n)->(n)')
+        vectorized = np.vectorize(taper, signature='(n)->(n)')
 
         # Twists coordinates
         self.coords = vectorized(self.coords)
 
+        for idx,face in enumerate(self.faces):
+            for i in range(3):
+                comp = face.points[i,index]
+                face.avNorms[i] = taper_normal(face.avNorms[i],comp)
+
+            component = face.center[index]
+            face.normal = taper_normal(face.normal,component)
 

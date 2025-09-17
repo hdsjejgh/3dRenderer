@@ -49,6 +49,7 @@ Support 4 dimensions (??)
 # #
 ## Renderer in action ##
 (Note, the renderer is regularly being updated and optimized, much more often than new videos are being added; therefore, these videos may represent an outdated version of the program)
+As of now the media is NOT up to date
 
 ### Simple 3d model with Phong Lighting ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/phongkey.gif)
