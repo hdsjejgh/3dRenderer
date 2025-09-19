@@ -5,6 +5,7 @@ import numba
 from PIL import Image
 from collections import defaultdict
 import math
+from abc import ABC
 #-----------------------------------------------#
 
 
@@ -51,147 +52,16 @@ def rot_matrix(axis,deg):
     return rotMat
 
 
-#Class for loading a .obj 3d model
-class OBJFile():
-    def __init__(self,filepath, reverseNormals=False,texture=None, *args, **kwargs):
+#The base abstract class for 3d model loading
+class File(ABC):
 
-        #Holds 3d coordinates of file
-        self.coords = []
-
-        #Holds the variety of face objects (at first just contains the corresponding coordinate ids)
-        self.faces = []
-
-        #Holds vertex normals (if they are in the file)
-        self.vertexnormals = []
-        #Holds vertex normal ids for each face
-        self.vnids = []
-        #Whether or not the file had pregiven vertex normals
-        self.vnloaded = False
-
-        #Whether or not there is a texture given
-        self.textured = False if texture is None else True
-        if self.textured:
-            #Holds texture coordinates
-            self.texturecoords = []
-            #Loads and converts texture to np array
-            self.texture = Image.open(texture)
-            self.texture = np.array(self.texture)
-            #Height and width of texture
-            self.height = self.texture.shape[0]
-            self.width = self.texture.shape[1]
-            #Contains which texture coordinate each face corresponds to
-            self.textureids = []
-
-        #Whether or not to flip normal vectors
-        self.reverseNormals = reverseNormals
-
-        #Used to time variety of things
-        t = time()
-
-
-        with open(filepath, "r") as file:
-            for line in file:
-                line = line.split()
-                #If line is empty, continue
-                if len(line)<1: continue
-
-                #What kind of data is given in the line (v,f,vn,vt)
-                type = line[0]
-
-                #Vertex point given
-                if type == 'v':
-                    items = [float(line[i]) for i in range(1, 4)]
-                    self.coords.append(items)
-
-                #Face given
-                elif type == 'f':
-
-                    #Face data contains data for the 3 coordinates individually
-                    items = line[1:]
-                    #Separates the individual vertex data
-                    items = list(map(lambda x: x.split('/'),items))
-
-                    #Data for coordinates
-                    face = []
-                    #Data for vertex normals
-                    vn = []
-                    #Data for texture coordinates
-                    tc = []
-
-                    #goes over all 3 vertices
-                    for i in items:
-                        #0 indexes coordinates as well
-                        face.append(int(i[0])-1)
-                        vn.append(int(i[2])-1)
-                        if self.textured: tc.append(int(i[1]) - 1)
-
-                    self.faces.append(face)
-                    self.vnids.append(vn)
-                    if self.textured: self.textureids.append(tc)
-
-                #Texture coordinate given
-                elif type == 'vt' and self.textured:
-                    items = [float(line[i])*[0,self.width,self.height][i] for i in range(1, 3)]
-                    #changes <0,0> to be the top left instead of bottom left by reflecting then shifting
-                    items[-1]=self.height-items[-1]
-                    self.texturecoords.append(items)
-
-                #Vertex normal given
-                elif type == 'vn':
-                    #Confirms vertex normals were included
-                    self.vnloaded = True
-
-                    items = [float(line[i]) for i in range(1, 4)]
-                    self.vertexnormals.append(items)
-
-        #Time taken to load file
-        print(f"Loading: {time()-t} seconds")
-        t = time()
-
-        #Converts everything to a numpy array
-        self.coords = np.array(self.coords)
-        self.vertexnormals = np.array(self.vertexnormals)
-        self.faces = np.array(self.faces)
-        if self.textured:
-            self.texturecoords = np.array(self.texturecoords)
-
-
-        #Handles all 4 face information scenarios:
-        #no vn, yes textures;  no vn, no textures;  yes vn, yes textures;  yes vn, no textures
-
-        #If no vertex normals are provided, none will be provided to the faces, and they will have to calculate them manually
-        if not self.vnloaded:
-            if self.textured:
-                self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i]) for i in range(len(self.faces))]
-            else:
-                self.faces = [self.face(self, self.faces[i], i) for i in range(len(self.faces))]
-
-        #If vertex normals are provided, faces won't have to calculate them (quicker and more accurate)
-        else:
-            if self.textured:
-                self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i],vn=self.vnids[i]) for i in range(len(self.faces))]
-            else:
-                self.faces = [self.face(self, self.faces[i], i,vn=self.vnids[i]) for i in range(len(self.faces))]
-
-        #Time taken to make faces
-        print(f"Faces: {time() - t} seconds")
-        t = time()
-
-        #Finicky, inefficient method to get average norms if not provided
-        #Not needed that often so its probably fine
-        #ts is kafkaesque
-        if not self.vnloaded:
-            self.mapping = defaultdict(list)
-            for i, face in enumerate(self.faces):
-                for v in face.indices:
-                    self.mapping[v].append(i)
-            self.get_borders()
-            print(f"Borders: {time() - t} seconds")
-        t = time()
-
-        #Defines center of model
-        self.center = self.cc()
-
+    def __init__(self):
+        #All the following must be defined in any file loading classes derived
+        #(also just Defining them here just to stop the ide from complaining about this class)
+        self.faces = None
+        self.coords = None
+        self.mapping = None
+        self.center = None
 
 
     #Face metaclass defines a face (no way)
@@ -451,10 +321,7 @@ class OBJFile():
             c = vect[index]
 
             # The eval doesn't seem to work unless the parameters are mentioned, this seems to fix it
-            a_constant
-            a_coeff
-            b_constant
-            b_coeff
+            a_constant; a_coeff; b_constant; b_coeff
 
             mat = np.array([
                 [eval(xEquation),0,0],
@@ -469,12 +336,8 @@ class OBJFile():
 
             c = vect[index]
 
-            #The eval doesn't seem to work unless the parameters are mentioned, this seems to fix it
-            a_constant
-            a_coeff
-            b_constant
-            b_coeff
-
+            #The eval doesn't seem to work unless the parameters are mentioned????, this seems to fix it
+            a_constant; a_coeff; b_constant; b_coeff
 
             mat = np.array([
                 [eval(xEquation), 0, 0],
@@ -501,4 +364,148 @@ class OBJFile():
 
             component = face.center[index]
             face.normal = taper_normal(face.normal,component)
+
+
+
+#Class for loading .OBJ Files
+class OBJ_File(File):
+    def __init__(self,filepath, reverseNormals=False,texture=None, *args, **kwargs):
+        super().__init__()
+        #Holds 3d coordinates of file
+        self.coords = []
+
+        #Holds the variety of face objects (at first just contains the corresponding coordinate ids)
+        self.faces = []
+
+        #Holds vertex normals (if they are in the file)
+        self.vertexnormals = []
+        #Holds vertex normal ids for each face
+        self.vnids = []
+        #Whether or not the file had pregiven vertex normals
+        self.vnloaded = False
+
+        #Whether or not there is a texture given
+        self.textured = False if texture is None else True
+        if self.textured:
+            #Holds texture coordinates
+            self.texturecoords = []
+            #Loads and converts texture to np array
+            self.texture = Image.open(texture)
+            self.texture = np.array(self.texture)
+            #Height and width of texture
+            self.height = self.texture.shape[0]
+            self.width = self.texture.shape[1]
+            #Contains which texture coordinate each face corresponds to
+            self.textureids = []
+
+        #Whether or not to flip normal vectors
+        self.reverseNormals = reverseNormals
+
+        #Used to time variety of things
+        t = time()
+
+
+        with open(filepath, "r") as file:
+            for line in file:
+                line = line.split()
+                #If line is empty, continue
+                if len(line)<1: continue
+
+                #What kind of data is given in the line (v,f,vn,vt)
+                type = line[0]
+
+                #Vertex point given
+                if type == 'v':
+                    items = [float(line[i]) for i in range(1, 4)]
+                    self.coords.append(items)
+
+                #Face given
+                elif type == 'f':
+
+                    #Face data contains data for the 3 coordinates individually
+                    items = line[1:]
+                    #Separates the individual vertex data
+                    items = list(map(lambda x: x.split('/'),items))
+
+                    #Data for coordinates
+                    face = []
+                    #Data for vertex normals
+                    vn = []
+                    #Data for texture coordinates
+                    tc = []
+
+                    #goes over all 3 vertices
+                    for i in items:
+                        #0 indexes coordinates as well
+                        face.append(int(i[0])-1)
+                        vn.append(int(i[2])-1)
+                        if self.textured: tc.append(int(i[1]) - 1)
+
+                    self.faces.append(face)
+                    self.vnids.append(vn)
+                    if self.textured: self.textureids.append(tc)
+
+                #Texture coordinate given
+                elif type == 'vt' and self.textured:
+                    items = [float(line[i])*[0,self.width,self.height][i] for i in range(1, 3)]
+                    #changes <0,0> to be the top left instead of bottom left by reflecting then shifting
+                    items[-1]=self.height-items[-1]
+                    self.texturecoords.append(items)
+
+                #Vertex normal given
+                elif type == 'vn':
+                    #Confirms vertex normals were included
+                    self.vnloaded = True
+
+                    items = [float(line[i]) for i in range(1, 4)]
+                    self.vertexnormals.append(items)
+
+        #Time taken to load file
+        print(f"Loading: {time()-t} seconds")
+        t = time()
+
+        #Converts everything to a numpy array
+        self.coords = np.array(self.coords)
+        self.vertexnormals = np.array(self.vertexnormals)
+        self.faces = np.array(self.faces)
+        if self.textured:
+            self.texturecoords = np.array(self.texturecoords)
+
+
+        #Handles all 4 face information scenarios:
+        #no vn, yes textures;  no vn, no textures;  yes vn, yes textures;  yes vn, no textures
+
+        #If no vertex normals are provided, none will be provided to the faces, and they will have to calculate them manually
+        if not self.vnloaded:
+            if self.textured:
+                self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i]) for i in range(len(self.faces))]
+            else:
+                self.faces = [self.face(self, self.faces[i], i) for i in range(len(self.faces))]
+
+        #If vertex normals are provided, faces won't have to calculate them (quicker and more accurate)
+        else:
+            if self.textured:
+                self.faces = [self.face(self,self.faces[i],i,textureids = self.textureids[i],vn=self.vnids[i]) for i in range(len(self.faces))]
+            else:
+                self.faces = [self.face(self, self.faces[i], i,vn=self.vnids[i]) for i in range(len(self.faces))]
+
+        #Time taken to make faces
+        print(f"Faces: {time() - t} seconds")
+        t = time()
+
+        #Finicky, inefficient method to get average norms if not provided
+        #Not needed that often so its probably fine
+        #ts is kafkaesque
+        if not self.vnloaded:
+            self.mapping = defaultdict(list)
+            for i, face in enumerate(self.faces):
+                for v in face.indices:
+                    self.mapping[v].append(i)
+            self.get_borders()
+            print(f"Borders: {time() - t} seconds")
+        t = time()
+
+        #Defines center of model
+        self.center = self.cc()
+
 

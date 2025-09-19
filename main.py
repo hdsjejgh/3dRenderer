@@ -54,7 +54,7 @@ def mouse_callback(event, x, y, flags, params):
 cv.setMouseCallback("3d Render",mouse_callback)
 
 #The model loaded
-Model = OBJFile("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
+Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
 
 #Rotations the light source about a given access (x,y,z) by a given number of degrees
 def lightRot(axis,deg):
