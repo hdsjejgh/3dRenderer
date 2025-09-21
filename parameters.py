@@ -35,7 +35,7 @@ PHONG_EXPONENT = 200
 #Controls overall shine
 REFLECTIVITY_CONSTANT = 3
 #Ambient lighting for phong
-AMBIENT_INTENSITY = 0.25*255
+AMBIENT_INTENSITY = 0.05*255
 #Gamma value for gamma correction
 #Higher = darker base color
 GAMMA = 1

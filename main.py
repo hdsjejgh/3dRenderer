@@ -43,18 +43,18 @@ def mouse_callback(event, x, y, flags, params):
     elif event == cv.EVENT_MOUSEWHEEL:
         #If scrolled up
         if flags>0:
-            Model.scale(1.1)
+            Model.scale(1.1,[0,0,0])
             lightScale(1.1)
         #If scrolled down
         elif flags<0:
-            Model.scale(1/1.1)
+            Model.scale(1/1.1,[0,0,0])
             lightScale(1/1.1)
 
 #Sets up mouse callback function
 cv.setMouseCallback("3d Render",mouse_callback)
 
 #The model loaded
-Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
+Model = STL_ASCII_File("models/Discus.stl",reverseNormals=True)
 
 #Rotations the light source about a given access (x,y,z) by a given number of degrees
 def lightRot(axis,deg):
@@ -69,17 +69,21 @@ def lightScale(magnitude):
 
 #Transformations to be done to the model before anything
 def pretransformation():
-    Model.scale(-3)
-    #Model.rotate('x',-90)
-    #Model.shift('y', -75)
+    pass
+
+    #Model.scale(-3)
+    Model.rotate('x',90)
+    Model.centerShift()
 
 #What transformations to apply to the model every frame
 def TransformationLoop():
     pass
-    Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
+
+    #Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
     # Model.twist('z', 1, 0.01, center=100)
     lightRot('y',1)
+    print(parameters.LIGHT_POS)
 
 
 #Display function for nontextured phong
@@ -109,7 +113,9 @@ def display_phong(model):
                 zbuffer=zbuffer,
                 av_normals=face.avNorms,
                 coords_3d=face.points,
-                color=(255,255,255)
+                color=(255,255,255),
+                LIGHT_POS=parameters.LIGHT_POS,
+                LIGHT_VECTOR=parameters.LIGHT_VECTOR
         )
 
 
@@ -196,7 +202,7 @@ if __name__ == '__main__':
 
         #Updates the view
         #display_phong(Model)
-        display_phong_textured(Model)
+        display_phong(Model)
 
 
 

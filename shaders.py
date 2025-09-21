@@ -214,6 +214,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
 #Has to be separated from textured phong because numba likes being difficult
 @numba.njit()
 def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,255,255),LIGHT_POS=parameters.LIGHT_POS, LIGHT_VECTOR=parameters.LIGHT_VECTOR):
+
     # All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float64)
     # Vertex normals of the 3 vertices
@@ -280,6 +281,7 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 interpolated_normal = alpha * n1 + beta * n2 + gamma * n3
                 interpolated_normal /= np.sqrt(np.dot(interpolated_normal, interpolated_normal))
 
+
                 # Direction from the point to the global light source
                 light_dir = LIGHT_POS - surface_point
                 light_dir /= np.sqrt(np.dot(light_dir, light_dir))
@@ -295,6 +297,7 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 #         d2 * beta +
                 #         d3 * gamma
                 # )
+
 
                 # While i was cleaning up i tried again and it works just fine now???
                 diffuse = max(interpolated_normal.dot(light_dir), 0)
