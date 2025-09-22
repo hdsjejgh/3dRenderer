@@ -1,4 +1,4 @@
-## 3d Renderer ##
+## The Greatest 3D Renderer To Ever Grace Technology ##
 This is a 3D Renderer made from scratch (no 3d graphics libraries, or graphics APIs)
 
 The whole rendering pipeline is implemented from scratch (Model loading, transformations, per pixel shader calculation, rasterization). 
@@ -9,53 +9,68 @@ The renderer can handle a variety OBJ files (although larger files do not perfor
 
 ### To Do ###
 
-~~Migrate to pygame for rasterization~~
+* ~~Migrate to pygame for rasterization~~
 
-~~Add OBJ file support~~
+* ~~Add OBJ file support~~
 
-~~Implement backface culling~~
+* ~~Implement backface culling~~
 
-~~Migrate to numpy~~
+* ~~Migrate to numpy~~
 
-~~Implement a homemade rasterizer~~
+* ~~Implement a homemade rasterizer~~
 
-~~Implement a smooth shading algorithm (Gouraud)~~
+* ~~Implement a smooth shading algorithm (Gouraud)~~
+  * Not updated to handle the new system as of now
 
-~~Implement matrix transformations~~
+* ~~Implement matrix transformations~~
 
-~~Add a Z Buffer~~
+* ~~Add a Z Buffer~~
 
-~~Refactor the messy code~~
+* ~~Refactor the messy code~~
 
-Optimize the display more
+* Optimize the display more
+  * ~~Incremental barycentric coordinates~~ 
 
-~~Add Phong shading~~
+* ~~Add Phong shading~~
 
-~~Add texture loading~~
+* ~~Add texture loading~~
 
-~~Add a mouse based movement system~~
+* ~~Add a mouse based movement system~~
 
-Add nonlinear transformations
+* Add nonlinear transformations
+  * ~~Twisting~~
+  * ~~Linear Tapering~~
+  * Bending
 
-Add real-time diagnostics
+* Add real-time diagnostics
 
-Add built in recording
+* Add anti-aliasing
 
-Add a real camera system
+* Add more shading options
 
-Add support for other file types
+* Add Anti-Aliasing
 
-Support 4 dimensions (??)
+* Add built in recording
+
+* Add a real camera system
+
+* Add support for other file types
+  * STL Files
+    * ~~ASCII based~~
+    * Binary based
+
+* Support 4 dimensions (??)
 # #
 ## Renderer in action ##
 (Note, the renderer is regularly being updated and optimized, much more often than new videos are being added; therefore, these videos may represent an outdated version of the program)
-As of now the media is NOT up to date
 
-### Simple 3d model with Phong Lighting ###
+As of now the media is **NOT** up to date
+
+### Simple 3d model with Phong Lighting \[968 faces\] ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/phongkey.gif)
-### Large 3d model with Phong Lighting ###
+### Large 3d model with Phong Lighting \[19381 faces\]###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/hellkn.gif)
-### Textured 3d model with Phong Lighting (beta) ###
+### Textured 3d model with Phong Lighting (beta) \[284 faces\] ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/texturesworking.gif)
 
 
