@@ -68,7 +68,7 @@ As of now the media is **NOT** up to date
 
 ### Simple 3d model with Phong Lighting \[968 faces\] ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/phongkey.gif)
-### Large 3d model with Phong Lighting \[19381 faces\]###
+### Large 3d model with Phong Lighting \[19381 faces\] ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/hellkn.gif)
 ### Textured 3d model with Phong Lighting (beta) \[284 faces\] ###
 ![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/texturesworking.gif)
