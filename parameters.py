@@ -10,7 +10,7 @@ FOV = 250
 #Whether or not to use ZBuffer (A bit finicky)
 ZBUFF = True
 #Whether or not to use Backface Culling
-CULLING = False
+CULLING = True
 
 
 #Global Vectors

@@ -256,6 +256,7 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
     dbeta_x = -(C[1] - A[1]) / denom
     dbeta_y = (C[0] - A[0]) / denom
 
+
     for y in range(min_y, max_y):  # Iterates over y coordinates top to bottm
         for x in range(min_x, max_x):  # Iterates over x coordinates left to right
 
@@ -281,7 +282,6 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 interpolated_normal = alpha * n1 + beta * n2 + gamma * n3
                 interpolated_normal /= np.sqrt(np.dot(interpolated_normal, interpolated_normal))
 
-
                 # Direction from the point to the global light source
                 light_dir = LIGHT_POS - surface_point
                 light_dir /= np.sqrt(np.dot(light_dir, light_dir))
@@ -298,9 +298,8 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 #         d3 * gamma
                 # )
 
-
                 # While i was cleaning up i tried again and it works just fine now???
-                diffuse = max(interpolated_normal.dot(light_dir), 0)
+                diffuse = max(interpolated_normal.dot(-light_dir), 0)
 
                 # (What was bui tuong phong on about??)
                 # Calculates reflection direction vector

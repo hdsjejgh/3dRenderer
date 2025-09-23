@@ -54,7 +54,7 @@ def mouse_callback(event, x, y, flags, params):
 cv.setMouseCallback("3d Render",mouse_callback)
 
 #The model loaded
-Model = STL_ASCII_File("models/Discus.stl",reverseNormals=True)
+Model = OBJ_File("models/Hellknight.obj",reverseNormals=True)
 
 #Rotations the light source about a given access (x,y,z) by a given number of degrees
 def lightRot(axis,deg):
@@ -71,8 +71,8 @@ def lightScale(magnitude):
 def pretransformation():
     pass
 
-    #Model.scale(-3)
-    Model.rotate('x',90)
+    Model.scale(-1)
+    #Model.rotate('x',90)
     Model.centerShift()
 
 #What transformations to apply to the model every frame
@@ -83,7 +83,6 @@ def TransformationLoop():
     # Model.twist('x', 1, 0.01, center=100)
     # Model.twist('z', 1, 0.01, center=100)
     lightRot('y',1)
-    print(parameters.LIGHT_POS)
 
 
 #Display function for nontextured phong
@@ -92,9 +91,8 @@ def display_phong(model):
 
     #Gets and resets global view vector
     global view
+    global zbuffer
 
-    #Empty zbuffer of infinities
-    zbuffer = np.full((HEIGHT, WIDTH), np.inf, dtype=np.float64)
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -201,8 +199,8 @@ if __name__ == '__main__':
 
 
         #Updates the view
-        #display_phong(Model)
         display_phong(Model)
+        #display_phong_textured(Model)
 
 
 
