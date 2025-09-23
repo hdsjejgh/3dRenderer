@@ -54,7 +54,7 @@ def mouse_callback(event, x, y, flags, params):
 cv.setMouseCallback("3d Render",mouse_callback)
 
 #The model loaded
-Model = OBJ_File("models/Hellknight.obj",reverseNormals=True)
+Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
 
 #Rotations the light source about a given access (x,y,z) by a given number of degrees
 def lightRot(axis,deg):
@@ -71,7 +71,7 @@ def lightScale(magnitude):
 def pretransformation():
     pass
 
-    Model.scale(-1)
+    Model.scale(-3)
     #Model.rotate('x',90)
     Model.centerShift()
 
@@ -199,8 +199,8 @@ if __name__ == '__main__':
 
 
         #Updates the view
-        display_phong(Model)
-        #display_phong_textured(Model)
+        #display_phong(Model)
+        display_phong_textured(Model)
 
 
 

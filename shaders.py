@@ -120,22 +120,28 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
     dbeta_x = -(C[1] - A[1]) / denom
     dbeta_y = (C[0] - A[0]) / denom
 
-    #Diffuse lighting from all 3 average vertices calculated ahead of time to save computation
-    # d1 = max(n1.dot(LIGHT_VECTOR), 0)
-    # d2 = max(n2.dot(LIGHT_VECTOR), 0)
-    # d3 = max(n3.dot(LIGHT_VECTOR), 0)
-
-    #print(LIGHT_POS)
+    # Base alpha and beta values
+    # Gets incremented before every change in x and y
+    # Subtracts the changes at first so i can have the incrementation at the start of the loop instead of the end
+    alpharow = alpha_0 - dalpha_x - dalpha_y
+    betarow = beta_0 - dbeta_x - dbeta_y
 
     for y in range(min_y, max_y): #Iterates over y coordinates top to bottm
+
+        # Increments base alphas and betas by y change
+        alpharow += dalpha_y
+        betarow += dbeta_y
+
+        alpha = alpharow
+        beta = betarow
+
         for x in range(min_x, max_x): #Iterates over x coordinates left to right
 
-            #Calculates 2d barycentric weights using previously found change values
-            #Faster than calculating manually each time
-            alpha = alpha_0 + (x - min_x) * dalpha_x + (y - min_y) * dalpha_y
-            beta = beta_0 + (x - min_x) * dbeta_x + (y - min_y) * dbeta_y
+            # Increments base alphas and betas by x change
+            alpha += dalpha_x
+            beta += dbeta_x
+            # Calculates gamma based on alpha and beta
             gamma = 1 - alpha - beta
-
 
             if alpha>=0 and beta>=0 and gamma>=0: #if the current point is in the triangle, continue
 
@@ -175,14 +181,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
                 view_dir = parameters.CAMERA_POS - surface_point
                 view_dir /= np.sqrt(np.dot(view_dir, view_dir))
 
-                #The Diffuse lighting
-                #~~for some reason using the interpolated normal just makes it not work, so im doing it this way~~
-                # diffuse = (
-                #         d1 * alpha +
-                #         d2 * beta +
-                #         d3 * gamma
-                # )
-
+                # The Diffuse lighting
                 #While i was cleaning up i tried again and it works just fine now???
                 diffuse = max(interpolated_normal.dot(-light_dir), 0)
 
@@ -256,14 +255,27 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
     dbeta_x = -(C[1] - A[1]) / denom
     dbeta_y = (C[0] - A[0]) / denom
 
+    #Base alpha and beta values
+    #Gets incremented before every change in x and y
+    #Subtracts the changes at first so i can have the incrementation at the start of the loop instead of the end
+    alpharow = alpha_0-dalpha_x-dalpha_y
+    betarow = beta_0-dbeta_x-dbeta_y
 
     for y in range(min_y, max_y):  # Iterates over y coordinates top to bottm
+
+        #Increments base alphas and betas by y change
+        alpharow += dalpha_y
+        betarow += dbeta_y
+
+        alpha = alpharow
+        beta = betarow
+
         for x in range(min_x, max_x):  # Iterates over x coordinates left to right
 
-            # Calculates 2d barycentric weights using previously found change values
-            # Faster than calculating manually each time
-            alpha = alpha_0 + (x - min_x) * dalpha_x + (y - min_y) * dalpha_y
-            beta = beta_0 + (x - min_x) * dbeta_x + (y - min_y) * dbeta_y
+            #Increments base alphas and betas by x change
+            alpha+=dalpha_x
+            beta+=dbeta_x
+            #Calculates gamma based on alpha and beta
             gamma = 1 - alpha - beta
 
             if alpha >= 0 and beta >= 0 and gamma >= 0:  # if the current point is in the triangle, continue
@@ -291,13 +303,6 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 view_dir /= np.sqrt(np.dot(view_dir, view_dir))
 
                 # The Diffuse lighting
-                # ~~for some reason using the interpolated normal just makes it not work, so im doing it this way~~
-                # diffuse = (
-                #         d1 * alpha +
-                #         d2 * beta +
-                #         d3 * gamma
-                # )
-
                 # While i was cleaning up i tried again and it works just fine now???
                 diffuse = max(interpolated_normal.dot(-light_dir), 0)
 
