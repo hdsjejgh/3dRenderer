@@ -11,16 +11,20 @@ prevx,prevy = -1,-1
 #Font info for the display
 font = cv.FONT_HERSHEY_SIMPLEX
 #Bottom left of the first display thing (The fps)
-org = (10,20)
+org = np.array([10,25])
 #Font visual options
 fontScale = .5
 color = (0, 255, 0)
 thickness = 2
 lineType = cv.INTER_AREA
 
-#Average FPS and alpha for calculating the fps using exponentially moving average
+#Average FPS, alpha, and current timestep for calculating the fps using exponentially moving average
 averageFPS = 0.0
 ALPHA = 0.9
+timestep = 0
+
+#Number of valid faces in current frame (for diagnostic purposes)
+num_faces = 0
 
 #Handles all mouse functions
 #Dragging rotates everything in the expected manner
@@ -106,14 +110,19 @@ def display_phong(model):
     #Gets and resets global view vector
     global view
     global zbuffer
+    global num_faces
 
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
     centArray = np.array([WIDTH/2,HEIGHT/2])
 
-    #Iterates over faces facing towards camera
-    for face in model.validFaces():
+    validFaces = model.validFaces()
+
+    #Saves number of faces in current frame
+    num_faces = len(validFaces)
+    #Iterates over faces facing towards camera to render
+    for face in validFaces:
 
         #Centered version of face's 2 dimensional coordinates
         coords = face.TwoDCoords+centArray
@@ -141,14 +150,16 @@ def display_phong_textured(model):
     # Gets and resets global view vector
     global view
     global zbuffer
-
-    # Empty zbuffer of infinities
-
+    global num_faces
 
     # Array needed to center points in the display
     # (<0,0> would be shifted to the view's middle)
     centArray = np.array([WIDTH / 2, HEIGHT / 2])
 
+    validFaces = model.validFaces()
+
+    # Saves number of faces in current frame
+    num_faces = len(validFaces)
     #Iterates over faces facing towards camera
     for face in model.validFaces():
 
@@ -188,6 +199,8 @@ if __name__ == '__main__':
     #Closes display upon clicking 'x' key
     while cv.waitKey(20)&0xff != ord('x'):
 
+        timestep += 1
+
         t = time()
 
         #Updates the 2d coordinates to reflect any transformations
@@ -226,7 +239,13 @@ if __name__ == '__main__':
         #Calculating and displaying new exponentially weighted average
         FPS = 1/(time() - t)
         averageFPS = ALPHA * averageFPS + (1-ALPHA) * FPS
+        #Applies bias correction so that initial values aren't low
+        #The *5 isn't part of the formula it just happens to make the calculations more stable so im including it
+        averageFPS /= 1-(ALPHA**(timestep*5))
         cv.putText(view,f"{averageFPS:.1f} FPS",org, font, fontScale, color, thickness, lineType)
+
+        #Displays current number of faces
+        cv.putText(view, f"{num_faces} Faces", org+np.array([0,20]), font, fontScale, color, thickness, lineType)
 
         #Displays view in opencv
         cv.imshow("3d Render",view)
