@@ -83,11 +83,11 @@ def rasterize(coords, color, view):
 @numba.njit() #Numba used to provide massive speedups
 def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, texturecoords=None, texture=np.empty((1,1),np.int64),LIGHT_POS=parameters.LIGHT_POS, LIGHT_VECTOR=parameters.LIGHT_VECTOR):
     #All 3 2 dimensions coordinates
-    A, B, C = coords.astype(np.float64)
+    A, B, C = coords.astype(np.float32)
     #Vertex normals of the 3 vertices
-    n1, n2, n3 = [np.asarray(n, dtype=np.float64) for n in av_normals]
+    n1, n2, n3 = [np.asarray(n, dtype=np.float32) for n in av_normals]
     #3 dimensional coordinates
-    coords_3d = coords_3d.astype(np.float64)
+    coords_3d = coords_3d.astype(np.float32)
 
     #left,right,down,up
     #Used for the bounding box
@@ -157,7 +157,7 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
                     j = max(0, min(texture.shape[1] - 1, j))
 
                     # Base represents the color of the model at the current pixel
-                    base = np.asarray(texture[i, j], dtype=np.float64)
+                    base = np.asarray(texture[i, j], dtype=np.float32)
 
                 #Finds the 2d coordinate projected onto the 3d face
                 surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
@@ -215,11 +215,11 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
 def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,255,255),LIGHT_POS=parameters.LIGHT_POS, LIGHT_VECTOR=parameters.LIGHT_VECTOR):
 
     # All 3 2 dimensions coordinates
-    A, B, C = coords.astype(np.float64)
+    A, B, C = coords.astype(np.float32)
     # Vertex normals of the 3 vertices
-    n1, n2, n3 = [np.asarray(n, dtype=np.float64) for n in av_normals]
+    n1, n2, n3 = [np.asarray(n, dtype=np.float32) for n in av_normals]
     # 3 dimensional coordinates
-    coords_3d = coords_3d.astype(np.float64)
+    coords_3d = coords_3d.astype(np.float32)
     #Base color of the model
     #White by default
     base=color

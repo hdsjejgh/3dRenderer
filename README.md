@@ -43,8 +43,8 @@ The renderer can handle a variety OBJ files (although larger files do not perfor
   * Bending
 
 * Add real-time diagnostics
-
-* Add anti-aliasing
+  * ~~EMA FPS tracker~~
+  * Face count
 
 * Add more shading options
 

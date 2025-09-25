@@ -54,11 +54,23 @@ def rot_matrix(axis,deg):
 
     # Forms rotational matrix based on the above
     if axis == 'x':
-        rotMat = np.array([[1, 0, 0], [0, ca, -sa], [0, sa, ca]])
+        rotMat = np.array(
+                    [[1, 0, 0],
+                           [0, ca, -sa],
+                           [0, sa, ca]],
+                           dtype=np.float32)
     elif axis == 'y':
-        rotMat = np.array([[ca, 0, sa], [0, 1, 0], [-sa, 0, ca]])
+        rotMat = np.array(
+                    [[ca, 0, sa],
+                           [0, 1, 0],
+                           [-sa, 0, ca]],
+                           dtype=np.float32)
     elif axis == 'z':
-        rotMat = np.array([[ca, sa, 0], [-sa, ca, 0], [0, 0, 1]])
+        rotMat = np.array(
+                    [[ca, sa, 0],
+                           [-sa, ca, 0],
+                           [0, 0, 1]],
+                          dtype=np.float32)
 
     return rotMat
 
@@ -120,7 +132,7 @@ class File(ABC):
                 self.normal = s/3
             else:
                 self.avNorms = outerInstance.vertexnormals[vn]
-                self.normal = np.array(normal,dtype=np.float64)
+                self.normal = np.array(normal,dtype=np.float32)
 
             #reverses normal
             if reverse:
@@ -129,7 +141,7 @@ class File(ABC):
             #normalizes normal
             self.normal /= np.linalg.norm(self.normal)
 
-            self.avNorms=self.avNorms.astype(np.float64)
+            self.avNorms=self.avNorms.astype(np.float32)
 
         #A face is less than another if its z is less than it
         def __lt__(self, other):
@@ -598,7 +610,7 @@ class STL_ASCII_File(File):
                     case "endfacet":
                         f+=1
 
-            normals = np.array(normals,dtype=np.float64)
+            normals = np.array(normals,dtype=np.float32)
 
             #Maps each vertex to its normal
             vert2norm = {v:sum(normals[vert2face[v]])/len(vert2face[v]) for v in vert2face}
@@ -616,7 +628,7 @@ class STL_ASCII_File(File):
             normal = []
 
             c = self.coords
-            self.coords = np.array(self.coords,dtype = np.float64)
+            self.coords = np.array(self.coords,dtype = np.float32)
 
             #Second iteration through file actually creates faces
             #Incredibly inefficient :wilted_rose:

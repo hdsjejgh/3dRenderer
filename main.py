@@ -8,6 +8,20 @@ cv.namedWindow("3d Render")
 #Previous mouse coordinates; used to calculate mouse movement
 prevx,prevy = -1,-1
 
+#Font info for the display
+font = cv.FONT_HERSHEY_SIMPLEX
+#Bottom left of the first display thing (The fps)
+org = (10,20)
+#Font visual options
+fontScale = .5
+color = (0, 255, 0)
+thickness = 2
+lineType = cv.INTER_AREA
+
+#Average FPS and alpha for calculating the fps using exponentially moving average
+averageFPS = 0.0
+ALPHA = 0.9
+
 #Handles all mouse functions
 #Dragging rotates everything in the expected manner
 #Scrolling up zooms in
@@ -174,13 +188,15 @@ if __name__ == '__main__':
     #Closes display upon clicking 'x' key
     while cv.waitKey(20)&0xff != ord('x'):
 
+        t = time()
+
         #Updates the 2d coordinates to reflect any transformations
         Model.updateFaces()
 
         #View variable is actual display (each element is 1 pixel)
         view = np.zeros((HEIGHT,WIDTH,3),dtype=np.uint8)
 
-        zbuffer = np.full((HEIGHT, WIDTH), np.inf, dtype=np.float64)
+        zbuffer = np.full((HEIGHT, WIDTH), np.inf, dtype=np.float32)
 
         #Adds a white dot to the display and zbuffer indicate the origin
         origin = (int(parameters.WIDTH/2),int(parameters.HEIGHT/2))
@@ -191,18 +207,26 @@ if __name__ == '__main__':
         LIGHT2Dx = int((parameters.LIGHT_POS[0] * parameters.FOV) / (parameters.LIGHT_POS[2] + parameters.FOV) + parameters.WIDTH / 2)
         LIGHT2Dy = int((parameters.LIGHT_POS[1] * parameters.FOV) / (parameters.LIGHT_POS[2] + parameters.FOV) + parameters.HEIGHT / 2)
 
-        lights = [(LIGHT2Dx+i,LIGHT2Dy+j) for i in range(-2,3) for j in range(-2,3)]
+        lights = [(LIGHT2Dx+i,LIGHT2Dy+j) for i in range(-3,4) for j in range(-3,4)]
         for x,y in lights:
             if 0<=x<parameters.WIDTH and 0<=y<parameters.HEIGHT:
-                view[y, x] = np.array([0, 255, 255]).astype(np.uint8)
+                #Makes pixels further from the center of the light darker since it looks better
+                #Does make said pixels black even when above the model, but its a minor thing, ill fix it later
+                dist = abs(x-LIGHT2Dx)+abs(y-LIGHT2Dy)
+                light_color = 255*math.exp(-dist/3)
+
+                view[y, x] = np.array([0, light_color, light_color]).astype(np.uint8)
                 zbuffer[y,x] = parameters.LIGHT_POS[2]
 
 
         #Updates the view
-        #display_phong(Model)
-        display_phong_textured(Model)
+        display_phong(Model)
+        #display_phong_textured(Model)
 
-
+        #Calculating and displaying new exponentially weighted average
+        FPS = 1/(time() - t)
+        averageFPS = ALPHA * averageFPS + (1-ALPHA) * FPS
+        cv.putText(view,f"{averageFPS:.1f} FPS",org, font, fontScale, color, thickness, lineType)
 
         #Displays view in opencv
         cv.imshow("3d Render",view)
