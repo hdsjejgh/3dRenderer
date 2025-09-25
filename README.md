@@ -42,9 +42,9 @@ The renderer can handle a variety OBJ files (although larger files do not perfor
   * ~~Linear Tapering~~
   * Bending
 
-* Add real-time diagnostics
+* ~~Add real-time diagnostics~~
   * ~~EMA FPS tracker~~
-  * Face count
+  * ~~Face count~~
 
 * Add more shading options
 

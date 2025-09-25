@@ -187,11 +187,21 @@ class File(ABC):
 
     #Returns valid faces with regard to backface culling
     def validFaces(self):
-        # for some reason, backface culling does not want to work well
+        # for some reason, backface culling does not want to work well for faces near the edge
         # probably because of small rounding errors
-        if CULLING:
-            return tuple(sorted(filter(lambda x: np.dot(x.normal,VIEW_VECTOR)<1e-1, self.faces),reverse=False))
-        return tuple(sorted(self.faces, reverse=False))
+
+        #Function for checking validity of a face for rasterization
+        def validity_check(face):
+            #Backface culling
+            if CULLING and np.dot(face.normal,VIEW_VECTOR)>1e-1:
+                return False
+            #Dont bother rendering a face if its behind the camera
+            if np.all(face.points[:,2]<CAMERA_POS[2]):
+                return False
+            return True
+
+        return tuple(filter(validity_check, self.faces))
+
 
 
     #Linear transformations
