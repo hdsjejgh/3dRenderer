@@ -196,7 +196,7 @@ class File(ABC):
             if CULLING and np.dot(face.normal,VIEW_VECTOR)>1e-1:
                 return False
             #Dont bother rendering a face if its behind the camera
-            if np.all(face.points[:,2]<CAMERA_POS[2]):
+            if np.any(face.points[:,2]<CAMERA_POS[2]):
                 return False
             return True
 

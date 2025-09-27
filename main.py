@@ -1,3 +1,4 @@
+import parameters
 from shapes import *
 from shaders import *
 import cv2 as cv
@@ -72,7 +73,7 @@ def mouse_callback(event, x, y, flags, params):
 cv.setMouseCallback("3d Render",mouse_callback)
 
 #The model loaded
-Model = OBJ_File("models/Sphere.obj",reverseNormals=True)
+Model = OBJ_File("models/Shambler.obj",reverseNormals=True)
 
 #Rotations the light source about a given access (x,y,z) by a given number of degrees
 def lightRot(axis,deg):
@@ -89,7 +90,7 @@ def lightScale(magnitude):
 def pretransformation():
     pass
 
-    Model.scale(-50)
+    Model.scale(-3)
     #Model.rotate('x',90)
     Model.centerShift()
 
@@ -201,8 +202,6 @@ if __name__ == '__main__':
 
         timestep += 1
 
-        t = time()
-
         #Updates the 2d coordinates to reflect any transformations
         Model.updateFaces()
 
@@ -216,20 +215,23 @@ if __name__ == '__main__':
         view[origin[1],origin[0]] = np.array([255, 255, 255]).astype(np.uint8)
         zbuffer[origin[1], origin[0]] = 0
 
-        #Adds a yellow square (5x5) to the view and zbuffer to indicate the light source
-        LIGHT2Dx = int((parameters.LIGHT_POS[0] * parameters.FOV) / (parameters.LIGHT_POS[2] + parameters.FOV) + parameters.WIDTH / 2)
-        LIGHT2Dy = int((parameters.LIGHT_POS[1] * parameters.FOV) / (parameters.LIGHT_POS[2] + parameters.FOV) + parameters.HEIGHT / 2)
+        #Skips light if its behind model
+        if parameters.LIGHT_POS[2]>parameters.CAMERA_POS[2]:
 
-        lights = [(LIGHT2Dx+i,LIGHT2Dy+j) for i in range(-3,4) for j in range(-3,4)]
-        for x,y in lights:
-            if 0<=x<parameters.WIDTH and 0<=y<parameters.HEIGHT:
-                #Makes pixels further from the center of the light darker since it looks better
-                #Does make said pixels black even when above the model, but its a minor thing, ill fix it later
-                dist = abs(x-LIGHT2Dx)+abs(y-LIGHT2Dy)
-                light_color = 255*math.exp(-dist/3)
+            #Adds a yellow square (5x5) to the view and zbuffer to indicate the light source
+            LIGHT2Dx = int((parameters.LIGHT_POS[0] * parameters.FOV) / (parameters.LIGHT_POS[2] + parameters.FOV) + parameters.WIDTH / 2)
+            LIGHT2Dy = int((parameters.LIGHT_POS[1] * parameters.FOV) / (parameters.LIGHT_POS[2] + parameters.FOV) + parameters.HEIGHT / 2)
 
-                view[y, x] = np.array([0, light_color, light_color]).astype(np.uint8)
-                zbuffer[y,x] = parameters.LIGHT_POS[2]
+            lights = [(LIGHT2Dx+i,LIGHT2Dy+j) for i in range(-3,4) for j in range(-3,4)]
+            for x,y in lights:
+                if 0<=x<parameters.WIDTH and 0<=y<parameters.HEIGHT:
+                    #Makes pixels further from the center of the light darker since it looks better
+                    #Does make said pixels black even when above the model, but its a minor thing, ill fix it later
+                    dist = abs(x-LIGHT2Dx)+abs(y-LIGHT2Dy)
+                    light_color = 255*math.exp(-dist/3)
+
+                    view[y, x] = np.array([0, light_color, light_color]).astype(np.uint8)
+                    zbuffer[y,x] = parameters.LIGHT_POS[2]
 
 
         #Updates the view
@@ -249,6 +251,8 @@ if __name__ == '__main__':
 
         #Displays view in opencv
         cv.imshow("3d Render",view)
+
+        t = time()
 
         #Runs per frame transformations
         TransformationLoop()

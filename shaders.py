@@ -162,9 +162,13 @@ def rasterize_phong_texture(coords, view, zbuffer, av_normals, coords_3d, textur
                 #Finds the 2d coordinate projected onto the 3d face
                 surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
+                Z = surface_point[2]
+                if Z <= parameters.CAMERA_POS[2]:
+                    continue
+
+                #Skips points if behind camera
                 if parameters.ZBUFF: #Zbuffers if enabled
                     #Skips point if closer point already drawn over it
-                    Z = surface_point[2]
                     if Z >= zbuffer[y, x]:
                         continue
                     zbuffer[y, x] = Z
@@ -283,9 +287,13 @@ def rasterize_phong(coords, view, zbuffer, av_normals, coords_3d, color = (255,2
                 # Finds the 2d coordinate projected onto the 3d face
                 surface_point = alpha * coords_3d[0] + beta * coords_3d[1] + gamma * coords_3d[2]
 
+                #Skips points behind camera
+                Z = surface_point[2]
+                if Z <= parameters.CAMERA_POS[2]:
+                    continue
+
                 if parameters.ZBUFF:  # Zbuffers if enabled
                     # Skips point if closer point already drawn over it
-                    Z = surface_point[2]
                     if Z >= zbuffer[y, x]:
                         continue
                     zbuffer[y, x] = Z

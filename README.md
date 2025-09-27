@@ -1,11 +1,21 @@
 ## The Greatest 3D Renderer To Ever Grace Technology ##
 This is a 3D Renderer made from scratch (no 3d graphics libraries, or graphics APIs)
 
-The whole rendering pipeline is implemented from scratch (Model loading, transformations, per pixel shader calculation, rasterization). 
-As of now, it has the ability to load OBJ files (as well as singular texture files), and perform a variety of transformations on the model (shifting, scaling, rotation, and general matrix transformation) and light source. 
+The whole rendering pipeline is implemented from scratch (Model loading, transformations, per pixel shader calculation, rasterization, etc.). 
+As of now, it has the ability to load OBJ files (as well as singular texture files), load STL files, and perform a variety of transformations on the model (shifting, scaling, rotation, general matrix transformation, twisting, tapering) and light source. 
 The renderer has mouse controls, allowing zooming and rotating of the scene. Phong shading and (although now somewhat defunct) Gouraud shading are included. 
 
-The renderer can handle a variety OBJ files (although larger files do not perform as well) as seen below.
+The renderer can handle a variety of OBJ and STL files (although larger files do not perform as well) as seen below.
+
+### How to use ###
+
+(Quiet clunky as of now). 
+Open the main.py file, and load the desired model into the Model variable with the correct class (different classes for different files are found in shapes.py). 
+Around line 240, make sure the correct display function is being used, there is one for textured models and another for nontextured models. 
+Add any pretransformations to the light or model to the pretransformation function. 
+Add any per frams transformations in the Transformationloop function. 
+Run the file. 
+Drag and scroll to rotate and zoom.
 
 ### To Do ###
 
