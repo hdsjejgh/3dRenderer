@@ -2,6 +2,8 @@ import parameters
 from shapes import *
 from shaders import *
 import cv2 as cv
+from displayFunctions import *
+from lightFunctions import *
 #-----------------------------------------------#
 
 cv.namedWindow("3d Render")
@@ -27,64 +29,11 @@ timestep = 0
 #Number of valid faces in current frame (for diagnostic purposes)
 num_faces = 0
 
-#Handles all mouse functions
-#Dragging rotates everything in the expected manner
-#Scrolling up zooms in
-#Scrolling down zooms out
-def mouse_callback(event, x, y, flags, params):
-    global prevx,prevy
-
-    #If mouse pressed
-    if event == cv.EVENT_LBUTTONDOWN:
-        prevx,prevy = x,y
-    #If mouse unpressed, erase previous position data
-    elif event == cv.EVENT_LBUTTONUP:
-        prevx,prevy = -1,-1
-    #If mouse moved and previous position data exists, rotate everything
-    elif event == cv.EVENT_MOUSEMOVE:
-        if prevx!=-1 and prevy !=-1:
-            dx = x-prevx
-            dy = y-prevy
-            prevx = x
-            prevy = y
-
-            #Rotations are scaled such that dragging across half the screen rotats the model 90 degrees
-
-            lightRot('y',(-dx/parameters.WIDTH)*180)
-            Model.rotate('y',(-dx/parameters.WIDTH)*180,selfcc=False)
-
-            lightRot('x', (dy / parameters.HEIGHT) * 180)
-            Model.rotate('x', (dy / parameters.HEIGHT) * 180,selfcc=False)
-
-            Model.updateFaces()
-
-    #If mouse scrolled
-    elif event == cv.EVENT_MOUSEWHEEL:
-        #If scrolled up
-        if flags>0:
-            Model.scale(1.1,[0,0,0])
-            lightScale(1.1)
-        #If scrolled down
-        elif flags<0:
-            Model.scale(1/1.1,[0,0,0])
-            lightScale(1/1.1)
-
 #Sets up mouse callback function
 cv.setMouseCallback("3d Render",mouse_callback)
 
 #The model loaded
 Model = OBJ_File("models/Shambler.obj",reverseNormals=True)
-
-#Rotations the light source about a given access (x,y,z) by a given number of degrees
-def lightRot(axis,deg):
-    parameters.LIGHT_POS[:] = rot_matrix(axis, deg) @ parameters.LIGHT_POS
-    parameters.LIGHT_VECTOR[:] = -parameters.LIGHT_POS / np.linalg.norm(parameters.LIGHT_POS)
-
-#Scales the light position vector by given magnitude
-def lightScale(magnitude):
-    parameters.LIGHT_POS*=magnitude
-    if magnitude<0:
-        parameters.LIGHT_VECTOR *= -1
 
 #Transformations to be done to the model before anything
 def pretransformation():
@@ -98,94 +47,16 @@ def pretransformation():
 def TransformationLoop():
     pass
 
-    #Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
+    # Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
     # Model.twist('z', 1, 0.01, center=100)
     lightRot('y',1)
 
-
-#Display function for nontextured phong
-#Separated just for clarity
-def display_phong(model):
-
-    #Gets and resets global view vector
-    global view
-    global zbuffer
-    global num_faces
-
-
-    #Array needed to center points in the display
-    #(<0,0> would be shifted to the view's middle)
-    centArray = np.array([WIDTH/2,HEIGHT/2])
-
-    validFaces = model.validFaces()
-
-    #Saves number of faces in current frame
-    num_faces = len(validFaces)
-    #Iterates over faces facing towards camera to render
-    for face in validFaces:
-
-        #Centered version of face's 2 dimensional coordinates
-        coords = face.TwoDCoords+centArray
-
-        #Rasterizes
-        rasterize_phong(
-                coords=coords,
-                view=view,
-                zbuffer=zbuffer,
-                av_normals=face.avNorms,
-                coords_3d=face.points,
-                color=(255,255,255),
-                LIGHT_POS=parameters.LIGHT_POS,
-                LIGHT_VECTOR=parameters.LIGHT_VECTOR
-        )
-
-
-#Display function for ntextured phong
-#Separated just for clarity
-def display_phong_textured(model):
-    #Errors if textureless model is given
-    assert model.textured, "Shape is not textured"
-    texture = model.texture
-
-    # Gets and resets global view vector
-    global view
-    global zbuffer
-    global num_faces
-
-    # Array needed to center points in the display
-    # (<0,0> would be shifted to the view's middle)
-    centArray = np.array([WIDTH / 2, HEIGHT / 2])
-
-    validFaces = model.validFaces()
-
-    # Saves number of faces in current frame
-    num_faces = len(validFaces)
-    #Iterates over faces facing towards camera
-    for face in model.validFaces():
-
-        #Loads current face's texture coordinates
-        texture_points = face.texturepoints
-
-        #Centered version of face's 2 dimensional coordinates
-        coords = face.TwoDCoords + centArray
-
-        #Rasterizes with textures
-        rasterize_phong_texture(
-                coords=coords,
-                view=view,
-                zbuffer=zbuffer,
-                av_normals=face.avNorms,
-                coords_3d=face.points,
-                texturecoords=texture_points,
-                texture=texture,
-                LIGHT_POS=parameters.LIGHT_POS,
-                LIGHT_VECTOR=parameters.LIGHT_VECTOR
-        )
-
-
-
 if __name__ == '__main__':
+
+    #Which shader rasterizing function to use
+    #All are in the displayFunctions file
+    SHADER = phong
 
     #T is used to time different things for debugging
     t = time()
@@ -235,8 +106,7 @@ if __name__ == '__main__':
 
 
         #Updates the view
-        display_phong(Model)
-        #display_phong_textured(Model)
+        SHADER(Model,view,zbuffer)
 
         #Calculating and displaying new exponentially weighted average
         FPS = 1/(time() - t)
