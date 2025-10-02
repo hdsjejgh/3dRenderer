@@ -80,11 +80,11 @@ cv.setMouseCallback("3d Render",mouse_callback)
 
 
 #The model loaded
-Model = OBJ_File("models/Shambler.obj",reverseNormals=True)
+Model = OBJ_File("models/Shambler.obj",texture="textures/Shambler.png",reverseNormals=True)
 
 # Which shader rasterizing function to use
 # All are in the displayFunctions file
-SHADER = phong
+SHADER = gouraud
 
 #Transformations to be done to the model before anything
 def pretransformation():
