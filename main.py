@@ -84,7 +84,7 @@ Model = OBJ_File("models/Shambler.obj",texture="textures/Shambler.png",reverseNo
 
 # Which shader rasterizing function to use
 # All are in the displayFunctions file
-SHADER = gouraud
+SHADER = phong
 
 #Transformations to be done to the model before anything
 def pretransformation():
@@ -132,10 +132,14 @@ if __name__ == '__main__':
 
         zbuffer = np.full((HEIGHT, WIDTH), np.inf, dtype=np.float32)
 
+        # Updates the view
+        SHADER(Model, view, zbuffer)
+
         #Adds a white dot to the display and zbuffer indicate the origin
         origin = (int(parameters.WIDTH/2),int(parameters.HEIGHT/2))
-        view[origin[1],origin[0]] = np.array([255, 255, 255]).astype(np.uint8)
-        zbuffer[origin[1], origin[0]] = 0
+        if zbuffer[origin[1],origin[0]] >=0:
+            view[origin[1],origin[0]] = np.array([255, 255, 255]).astype(np.uint8)
+            zbuffer[origin[1], origin[0]] = 0
 
         #Skips light if its behind model
         if parameters.LIGHT_POS[2]>parameters.CAMERA_POS[2]:
@@ -146,18 +150,17 @@ if __name__ == '__main__':
 
             lights = [(LIGHT2Dx+i,LIGHT2Dy+j) for i in range(-3,4) for j in range(-3,4)]
             for x,y in lights:
-                if 0<=x<parameters.WIDTH and 0<=y<parameters.HEIGHT:
+                if 0<=x<parameters.WIDTH and 0<=y<parameters.HEIGHT and zbuffer[y,x]>parameters.LIGHT_POS[2]:
                     #Makes pixels further from the center of the light darker since it looks better
                     #Does make said pixels black even when above the model, but its a minor thing, ill fix it later
                     dist = abs(x-LIGHT2Dx)+abs(y-LIGHT2Dy)
                     light_color = 255*math.exp(-dist/3)
 
-                    view[y, x] = np.array([0, light_color, light_color]).astype(np.uint8)
+                    view[y, x] += np.clip(np.array([0, light_color, light_color]).astype(np.uint8),a_min=0,a_max=255)
                     zbuffer[y,x] = parameters.LIGHT_POS[2]
 
 
-        #Updates the view
-        SHADER(Model,view,zbuffer)
+
 
         #Calculating and displaying new exponentially weighted average
         FPS = 1/(time() - t)
