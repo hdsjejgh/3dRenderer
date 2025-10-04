@@ -87,6 +87,9 @@ class File(ABC):
         self.center = None
 
 
+
+        self.valids = []
+
     #Face metaclass defines a face (no way)
     class face:
         def __init__(self,outerInstance, indices,textureids=None,vn=False,normal = False):
@@ -182,25 +185,26 @@ class File(ABC):
             face.points = self.coords[face.indices]
             face.center = sum(face.points)/3
 
-        #Puts faces sorted from back to front
-        #self.faces.sort(reverse=True)
+        self.valids = []
+        for i,face in enumerate(self.faces):
+            # Backface culling
+            if CULLING and np.dot(face.normal, VIEW_VECTOR) > 1e-1:
+                continue
+            # Dont bother rendering a face if its behind the camera
+            if np.any(face.points[:, 2] < CAMERA_POS[2]):
+                continue
+            self.valids.append(i)
 
     #Returns valid faces with regard to backface culling
     def validFaces(self):
         # for some reason, backface culling does not want to work well for faces near the edge
         # probably because of small rounding errors
 
-        #Function for checking validity of a face for rasterization
-        def validity_check(face):
-            #Backface culling
-            if CULLING and np.dot(face.normal,VIEW_VECTOR)>1e-1:
-                return False
-            #Dont bother rendering a face if its behind the camera
-            if np.any(face.points[:,2]<CAMERA_POS[2]):
-                return False
-            return True
 
-        return tuple(filter(validity_check, self.faces))
+        returnFaces = []
+        for i in self.valids: returnFaces.append(self.faces[i])
+
+        return returnFaces
 
 
 

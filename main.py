@@ -171,6 +171,7 @@ if __name__ == '__main__':
         cv.putText(view,f"{averageFPS:.1f} FPS",org, font, fontScale, color, thickness, lineType)
 
         #Displays current number of faces
+        num_faces = len(Model.valids)
         cv.putText(view, f"{num_faces} Faces", org+np.array([0,20]), font, fontScale, color, thickness, lineType)
 
         #Displays view in opencv
