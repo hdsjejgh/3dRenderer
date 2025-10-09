@@ -37,7 +37,7 @@ Drag and scroll to rotate and zoom.
 
 * ~~Refactor the messy code~~
 
-* Optimize the display more
+* ~~Optimize the display more~~
   * ~~Incremental barycentric coordinates~~ 
 
 * ~~Add Phong shading~~
@@ -56,6 +56,9 @@ Drag and scroll to rotate and zoom.
   * ~~Face count~~
 
 * Add more shading options
+  * ~~Phong~~
+  * ~~Gouruad~~
+  * ~~Lambertian~~ 
 
 * Add Anti-Aliasing
 
@@ -73,13 +76,15 @@ Drag and scroll to rotate and zoom.
 ## Renderer in action ##
 (Note, the renderer is regularly being updated and optimized, much more often than new videos are being added; therefore, these videos may represent an outdated version of the program)
 
-As of now the media is **NOT** up to date
+As of now the media is up to date
 
-### Simple 3d model with Phong Lighting \[968 faces\] ###
-![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/phongkey.gif)
-### Large 3d model with Phong Lighting \[19381 faces\] ###
-![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/hellkn.gif)
-### Textured 3d model with Phong Lighting (beta) \[284 faces\] ###
-![](https://github.com/hdsjejgh/3dRenderer/blob/c4f40e6e428deed1e48a63de79caa2acc17bc139/media/texturesworking.gif)
+### Larger 3d model with Lambertian Lighting \[968 faces\] ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/399d2f5bbcde72472cc075782027dcf5e0127442/media/lamb.gif)
+### Textured 3d model with Gouraud Lighting \[408 faces\] ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/399d2f5bbcde72472cc075782027dcf5e0127442/media/gouraudtexture.gif)
+### Textured 3d model with Phong Lighting \[284 faces\] ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/399d2f5bbcde72472cc075782027dcf5e0127442/media/phongtextured.gif)
 
-
+# #
+### Nonlinear transformation (Twist) ###
+![](https://github.com/hdsjejgh/3dRenderer/blob/399d2f5bbcde72472cc075782027dcf5e0127442/media/twist.gif)
