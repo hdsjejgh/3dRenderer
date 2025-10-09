@@ -445,6 +445,8 @@ class OBJ_File(File):
             self.texturecoords = []
             #Loads and converts texture to np array
             self.texture = Image.open(texture)
+            self.texture = self.texture.convert('RGB')
+
             self.texture = np.array(self.texture)
             #Height and width of texture
             self.height = self.texture.shape[0]

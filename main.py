@@ -80,18 +80,17 @@ cv.setMouseCallback("3d Render",mouse_callback)
 
 
 #The model loaded
-Model = OBJ_File("models/Shambler.obj",texture="textures/Shambler.png",reverseNormals=True)
-
+Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
 # Which shader rasterizing function to use
 # All are in the displayFunctions file
-SHADER = phong
+SHADER = gouraud
 
 #Transformations to be done to the model before anything
 def pretransformation():
     pass
 
     Model.scale(-3)
-    #Model.rotate('x',90)
+    #Model.rotate('y',-90)
     Model.centerShift()
 
 #What transformations to apply to the model every frame
@@ -100,7 +99,7 @@ def TransformationLoop():
 
     # Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
-    # Model.twist('z', 1, 0.01, center=100)
+    Model.twist('y', 1, 0.01, center=100)
     lightRot('y',1)
 
 
@@ -120,7 +119,7 @@ if __name__ == '__main__':
     t = time()
 
     #Closes display upon clicking 'x' key
-    while cv.waitKey(20)&0xff != ord('x'):
+    while cv.waitKey(1)&0xff != ord('x'):
 
         timestep += 1
 

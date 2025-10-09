@@ -390,6 +390,7 @@ def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoo
                         max(n2.dot(LIGHT_VECTOR), 0) * beta +
                         max(n3.dot(LIGHT_VECTOR), 0) * gamma) +
                                           parameters.AMBIENT_INTENSITY)])
+
                 color = base[::-1]*intensity/255
 
 
