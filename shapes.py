@@ -81,13 +81,13 @@ class File(ABC):
     def __init__(self):
         #All the following must be defined in any file loading classes derived
         #(also just Defining them here just to stop the ide from complaining about this class)
-        self.faces = None
-        self.coords = None
-        self.mapping = None
-        self.center = None
+        self.faces = []
+        self.coords = []
+        self.mapping = []
+        self.center = []
 
-
-
+        self.vnloaded=False
+        self.textured=False
         self.valids = []
 
     #Face metaclass defines a face (no way)
@@ -129,12 +129,14 @@ class File(ABC):
                 v2 = p2-p1
                 self.normal = np.cross(v1,v2)
             #If vertex normals provided, normal is defined as the average of them
+
             elif normal is False:
                 self.avNorms = outerInstance.vertexnormals[vn]
                 s = sum(self.avNorms)
                 self.normal = s/3
             else:
-                self.avNorms = outerInstance.vertexnormals[vn]
+                if vn != False:
+                    self.avNorms = outerInstance.vertexnormals[vn]
                 self.normal = np.array(normal,dtype=np.float32)
 
             #reverses normal
@@ -144,7 +146,8 @@ class File(ABC):
             #normalizes normal
             self.normal /= np.linalg.norm(self.normal)
 
-            self.avNorms=self.avNorms.astype(np.float32)
+            if vn==True:
+                self.avNorms=self.avNorms.astype(np.float32)
 
         #A face is less than another if its z is less than it
         def __lt__(self, other):
@@ -232,7 +235,8 @@ class File(ABC):
         #Rotates the normals
         for idx,face in enumerate(self.faces):
             face.normal = face.normal @ rotMat.T
-            face.avNorms = face.avNorms @ rotMat.T
+            if self.vnloaded:
+                face.avNorms = face.avNorms @ rotMat.T
 
     #Matrix based transformations
     def matrix_transformation(self,matrix):
@@ -247,7 +251,8 @@ class File(ABC):
 
         for idx,face in enumerate(self.faces):
             face.normal = face.normal @ arr_inv
-            face.avNorms = face.avNorms @ arr_inv
+            if self.vnloaded:
+                face.avNorms = face.avNorms @ arr_inv
 
     #Just shifts the object's coordinates
     def shift(self, axis: str, amount:int|float):
@@ -329,9 +334,10 @@ class File(ABC):
 
         #Twists average normals and normals for each face
         for idx,face in enumerate(self.faces):
-            for i in range(3):
-                comp = face.points[i,index]
-                face.avNorms[i] = twist_normal(face.avNorms[i],comp)
+            if self.vnloaded:
+                for i in range(3):
+                    comp = face.points[i,index]
+                    face.avNorms[i] = twist_normal(face.avNorms[i],comp)
 
             component = face.center[index]
             face.normal = twist_normal(face.normal,component)
@@ -405,9 +411,10 @@ class File(ABC):
         self.coords = vectorized(self.coords)
 
         for idx,face in enumerate(self.faces):
-            for i in range(3):
-                comp = face.points[i,index]
-                face.avNorms[i] = taper_normal(face.avNorms[i],comp)
+            if self.vnloaded:
+                for i in range(3):
+                    comp = face.points[i,index]
+                    face.avNorms[i] = taper_normal(face.avNorms[i],comp)
 
             component = face.center[index]
             face.normal = taper_normal(face.normal,component)
@@ -577,7 +584,7 @@ class OBJ_File(File):
         self.center = self.cc()
 
 
-class STL_ASCII_File(File):
+class STL_File(File):
 
     def __init__(self,filepath, reverseNormals=False, texture=None, *args, **kwargs):
         #Confirms file type
@@ -593,93 +600,48 @@ class STL_ASCII_File(File):
         # Holds the variety of face objects
         self.faces = []
 
-        with open(filepath,'r') as file:
-            header = next(file)
-            #All ascii based .stl files start with "solid"
-            assert header.split()[0]=="solid", "File is not an ASCII based .STL file"
+        file =  open(filepath,'r')
+        header = next(file)
 
-            #index of faces, variable needed since faces don't get stored at first
-            f = 0
+        #All ascii based .stl files start with "solid"
+        if header.split()[0]!="solid":
+            file.close()
+            file = open(filepath, 'rb')
 
-            #Face normals (corresponds with index variable f above)
-            normals = []
+        self.vnloaded=False
+        faces = []
+        #First iteration through file is to generate all the vertex normals since stl files do not include them
+        for i,line in enumerate(file):
+            line = line.strip().split()
 
-            #Maps each vertex with which faces it is connected to
-            vert2face = defaultdict(list)
+            match line[0]:
+                #If line describes a face
+                case "facet":
+                    #Adds normal to normals list in such a way that the ith entry is for the ith face
+                    normal = np.array(line[-3:],dtype=np.float32)
 
-            #First iteration through file is to generate all the vertex normals since stl files do not include them
-            for i,line in enumerate(file):
-                line = line.strip().split()
-
-                match line[0]:
-                    #If line describes a face
-                    case "facet":
-                        #Adds normal to normals list in such a way that the ith entry is for the ith face
-                        normals.append(np.array(line[-3:]))
-                    #If line describes a vertex
-                    case "vertex":
-                        #The coordinates of the vertex
-                        v = line[-3:]
-                        vert2face[tuple(v)].append(f)
+                    coords = []
+                #If line describes a vertex
+                case "vertex":
+                    #The coordinates of the vertex
+                    v = line[-3:]
+                    if v in self.coords:
+                        coords.append(self.coords.index(v))
+                    else:
+                        coords.append(len(self.coords))
                         self.coords.append(v)
-                    #If line describes the end of a face
-                    case "endfacet":
-                        f+=1
+                #If line describes the end of a face
+                case "endfacet":
+                    faces.append([coords,normal])
 
-            normals = np.array(normals,dtype=np.float32)
+        #Restarts file
 
-            #Maps each vertex to its normal
-            vert2norm = {v:sum(normals[vert2face[v]])/len(vert2face[v]) for v in vert2face}
-            #List of vertex normals
-            self.vertexnormals = np.array(list(vert2norm.values()),)
 
-            #Restarts file
-            file.seek(0)
+        file.close()
 
-            #Vertex indices per face
-            vindices = []
-            #Vertex normal (avg normal) indices per face
-            avgnindices = []
-            #Normal per face
-            normal = []
-
-            c = self.coords
-            self.coords = np.array(self.coords,dtype = np.float32)
-
-            #Second iteration through file actually creates faces
-            #Incredibly inefficient :wilted_rose:
-            for i,line in enumerate(file):
-                line = line.strip().split()
-
-                match line[0]:
-                    # If line describes a face
-                    case "facet":
-                        #Gets face normal
-                        normal = np.array(line[-3:])
-                    #If a line describes a vertex
-                    case "vertex":
-                        v = np.array(line[-3:])
-                        #Gets the index of the vertex in the list of vertices
-                        vid = np_index(c,v)
-                        vindices.append(vid)
-
-                        #the vertex normal of the current vertex
-                        vn = np.array(vert2norm[tuple(v)])
-                        #The index of the vn in the list of vn's is recorded
-                        avgnindices.append(np_index(self.vertexnormals,vn))
-                    #If a line describes the end of a face
-                    case "endfacet":
-                        #Creates face based on recorded information
-                        self.faces.append(self.face(self,
-                                                    indices=vindices,
-                                                    vn=avgnindices,
-                                                    normal = normal)
-                                          )
-
-                        #Resets everything to record for the next face
-                        vindices = []
-                        avgnindices = []
-                        normal = []
+        self.coords = np.array(self.coords,dtype=np.float32)
+        for f in faces:
+            self.faces.append(self.face(self,indices=f[0],normal=f[1]))
 
         #Finds model's visual center
         self.center = self.cc()
