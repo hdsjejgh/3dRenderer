@@ -67,9 +67,9 @@ Drag and scroll to rotate and zoom.
 * Add a real camera system
 
 * Add support for other file types
-  * STL Files
+  * ~~STL Files~~
     * ~~ASCII based~~
-    * Binary based
+    * ~~Binary based~~
 
 * Support 4 dimensions (??)
 # #

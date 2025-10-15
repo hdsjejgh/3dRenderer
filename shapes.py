@@ -1,5 +1,3 @@
-from email.policy import default
-
 from parameters import *
 import numpy as np
 from time import time
@@ -7,6 +5,7 @@ from PIL import Image
 from collections import defaultdict
 import math
 from abc import ABC
+import struct
 #-----------------------------------------------#
 
 
@@ -601,41 +600,72 @@ class STL_File(File):
         self.faces = []
 
         file =  open(filepath,'r')
-        header = next(file)
+        try:
+            header = next(file)
+            type = 'ascii'
+        except:
+            type = 'binary'
 
         #All ascii based .stl files start with "solid"
-        if header.split()[0]!="solid":
+        if type=='ascii':
+
+            self.vnloaded=False
+            faces = []
+            #First iteration through file is to generate all the vertex normals since stl files do not include them
+            for i,line in enumerate(file):
+                line = line.strip().split()
+
+                match line[0]:
+                    #If line describes a face
+                    case "facet":
+                        #Adds normal to normals list in such a way that the ith entry is for the ith face
+                        normal = np.array(line[-3:],dtype=np.float32)
+
+                        coords = []
+                    #If line describes a vertex
+                    case "vertex":
+                        #The coordinates of the vertex
+                        v = line[-3:]
+                        if v in self.coords:
+                            coords.append(self.coords.index(v))
+                        else:
+                            coords.append(len(self.coords))
+                            self.coords.append(v)
+                    #If line describes the end of a face
+                    case "endfacet":
+                        faces.append([coords,normal])
+
+
+        elif type=='binary':
+            print("ggg")
             file.close()
             file = open(filepath, 'rb')
 
-        self.vnloaded=False
-        faces = []
-        #First iteration through file is to generate all the vertex normals since stl files do not include them
-        for i,line in enumerate(file):
-            line = line.strip().split()
+            file.read(80)
 
-            match line[0]:
-                #If line describes a face
-                case "facet":
-                    #Adds normal to normals list in such a way that the ith entry is for the ith face
-                    normal = np.array(line[-3:],dtype=np.float32)
+            faces = []
 
-                    coords = []
-                #If line describes a vertex
-                case "vertex":
-                    #The coordinates of the vertex
-                    v = line[-3:]
+            num_triangles = file.read(4)
+            num_triangles = struct.unpack('<I', num_triangles)[0]
+            print(num_triangles)
+            for i in range(num_triangles):
+                normal = file.read(12)
+                normal = struct.unpack('<fff', normal)
+                normal = np.array(normal,dtype=np.float32)
+                coords = []
+
+                for ii in range(3):
+                    v = file.read(12)
+                    v = struct.unpack('<fff', v)
                     if v in self.coords:
                         coords.append(self.coords.index(v))
                     else:
                         coords.append(len(self.coords))
                         self.coords.append(v)
-                #If line describes the end of a face
-                case "endfacet":
-                    faces.append([coords,normal])
 
-        #Restarts file
+                faces.append([coords, normal[::-1]])
 
+                file.read(2)
 
         file.close()
 

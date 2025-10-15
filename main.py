@@ -80,17 +80,17 @@ cv.setMouseCallback("3d Render",mouse_callback)
 
 
 #The model loaded
-Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
+Model = STL_File("models/Low_Poly_Cat.stl",reverseNormals=True)
 # Which shader rasterizing function to use
 # All are in the displayFunctions file
-SHADER = gouraud
+SHADER = lambertian
 
 #Transformations to be done to the model before anything
 def pretransformation():
     pass
 
-    Model.scale(-3)
-    #Model.rotate('y',-90)
+    Model.scale(-5)
+    Model.rotate('x',-90)
     Model.centerShift()
 
 #What transformations to apply to the model every frame
@@ -99,12 +99,13 @@ def TransformationLoop():
 
     # Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
-    Model.twist('y', 1, 0.01, center=100)
+    #Model.twist('y', 1, 0.01, center=100)
     lightRot('y',1)
 
 
 #######################################################
 
+print(Model.coords.dtype)
 
 if __name__ == '__main__':
 
@@ -155,7 +156,7 @@ if __name__ == '__main__':
                     dist = abs(x-LIGHT2Dx)+abs(y-LIGHT2Dy)
                     light_color = 255*math.exp(-dist/3)
 
-                    view[y, x] += np.clip(np.array([0, light_color, light_color]).astype(np.uint8),a_min=0,a_max=255)
+                    view[y, x] = np.clip(view[y, x]+np.array([0, light_color, light_color]).astype(np.uint8),a_min=0,a_max=255)
                     zbuffer[y,x] = parameters.LIGHT_POS[2]
 
 
