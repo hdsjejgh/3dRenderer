@@ -80,17 +80,17 @@ cv.setMouseCallback("3d Render",mouse_callback)
 
 
 #The model loaded
-Model = STL_File("models/Low_Poly_Cat.stl",reverseNormals=True)
+Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
 # Which shader rasterizing function to use
 # All are in the displayFunctions file
-SHADER = lambertian
+SHADER = phong
 
 #Transformations to be done to the model before anything
 def pretransformation():
     pass
 
-    Model.scale(-5)
-    Model.rotate('x',-90)
+    Model.scale(-3)
+    #Model.rotate('x',-90)
     Model.centerShift()
 
 #What transformations to apply to the model every frame
@@ -105,7 +105,6 @@ def TransformationLoop():
 
 #######################################################
 
-print(Model.coords.dtype)
 
 if __name__ == '__main__':
 
@@ -160,7 +159,7 @@ if __name__ == '__main__':
                     zbuffer[y,x] = parameters.LIGHT_POS[2]
 
 
-
+        FXAA(view,parameters.LUM_VECT)
 
         #Calculating and displaying new exponentially weighted average
         FPS = 1/(time() - t)

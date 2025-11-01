@@ -1,9 +1,63 @@
-import random
 import parameters
 import numpy as np
 import numba
-import math
+
+from parameters import FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD, FXAA_SUBPIX_TRIM, FXAA_SUBPIX_TRIM_SCALE, FXAA_SUBPIX_CAP
+
+
 #-----------------------------------------------#
+
+
+#Anti-Aliasing
+
+
+#Fast Approximate Anti-Aliasing
+#(Based off the paper, credits to nvidia)
+@numba.njit()
+def FXAA(view,lum):
+    view = view.astype(np.float32)
+    lum = lum.astype(np.float32)
+    viewLum = (view[:, :, 0] * lum[0] +
+               view[:, :, 1] * lum[1] +
+               view[:, :, 2] * lum[2])
+    height,width = viewLum.shape
+    retMat = view.copy()
+
+    for y in range(1,height-1):
+        for x in range(1,width-1):
+            rgbN = view[y - 1, x]
+            rgbS = view[y + 1, x]
+            rgbE = view[y, x + 1]
+            rgbW = view[y, x - 1]
+            rgbM = view[y, x]
+            rgbNW = view[y - 1, x - 1]
+            rgbNE = view[y - 1, x + 1]
+            rgbSW = view[y + 1, x - 1]
+            rgbSE = view[y + 1, x + 1]
+
+            lumaN = viewLum[y - 1, x]
+            lumaS = viewLum[y + 1, x]
+            lumaE = viewLum[y, x + 1]
+            lumaW = viewLum[y, x - 1]
+            lumaM = viewLum[y, x]
+
+            rangeMin = min(lumaN, min(lumaS, min(lumaE, min(lumaW, lumaM))))
+            rangeMax = max(lumaN, max(lumaS, max(lumaE, max(lumaW, lumaM))))
+            rnge = rangeMax-rangeMin
+            if rnge < max(FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD*rangeMax): continue
+
+            lumaL = (lumaN+lumaW+lumaS+lumaE) * .25
+            rangeL = abs(lumaL-lumaM)
+            blendL = max(0.0, (rangeL-rnge) - FXAA_SUBPIX_TRIM) * FXAA_SUBPIX_TRIM_SCALE
+            blendL = min(FXAA_SUBPIX_CAP, blendL)
+
+            rgbL = rgbN + rgbNE + rgbNW + rgbS + rgbM + rgbE + rgbSE + rgbSW + rgbW
+            rgbL *= (1.0/9.0)
+
+
+
+
+
 
 
 #Operational Fragment Shaders

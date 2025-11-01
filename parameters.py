@@ -11,6 +11,18 @@ ZBUFF = True
 #Whether or not to use Backface Culling
 CULLING = True
 
+#Anti-Aliasing parameters
+
+#Luminance vector (dotted with color to find luminance)
+LUM_VECT = np.array([(0.587/0.299),1,0]).astype(np.float32)/255
+#Minimum local contrast to apply FXAA
+FXAA_EDGE_THRESHOLD = 1/8
+FXAA_EDGE_THRESHOLD_MIN = 1/16
+
+FXAA_SUBPIX = 1
+FXAA_SUBPIX_TRIM = 1/4
+FXAA_SUBPIX_CAP = 3/4
+FXAA_SUBPIX_TRIM_SCALE = 1/(1-FXAA_SUBPIX_TRIM)
 
 #Global Vectors
 
