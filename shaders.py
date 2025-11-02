@@ -2,7 +2,7 @@ import parameters
 import numpy as np
 import numba
 
-from parameters import FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD, FXAA_SUBPIX_TRIM, FXAA_SUBPIX_TRIM_SCALE, FXAA_SUBPIX_CAP
+from parameters import FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD, FXAA_SUBPIX_TRIM, FXAA_SUBPIX_TRIM_SCALE, FXAA_SUBPIX_CAP, FXAA_SEARCH_STEPS, FXAA_SEARCH_ACCELERATION
 
 
 #-----------------------------------------------#
@@ -40,6 +40,10 @@ def FXAA(view,lum):
             lumaE = viewLum[y, x + 1]
             lumaW = viewLum[y, x - 1]
             lumaM = viewLum[y, x]
+            lumaNW = viewLum[y - 1, x - 1]
+            lumaNE = viewLum[y - 1, x + 1]
+            lumaSW = viewLum[y + 1, x - 1]
+            lumaSE = viewLum[y + 1, x + 1]
 
             rangeMin = min(lumaN, min(lumaS, min(lumaE, min(lumaW, lumaM))))
             rangeMax = max(lumaN, max(lumaS, max(lumaE, max(lumaW, lumaM))))
@@ -54,10 +58,56 @@ def FXAA(view,lum):
             rgbL = rgbN + rgbNE + rgbNW + rgbS + rgbM + rgbE + rgbSE + rgbSW + rgbW
             rgbL *= (1.0/9.0)
 
+            edgeVert = (abs((0.25 * lumaNW) + (-0.5 * lumaN) + (0.25 * lumaNE))
+                        + abs((0.50 * lumaW) + (-1.0 * lumaM) + (0.50 * lumaE))
+                        + abs((0.25 * lumaSW) + (-0.5 * lumaS) + (0.25 * lumaSE)))
+            edgeHorz = (abs((0.25 * lumaNW) + (-0.5 * lumaW) + (0.25 * lumaSW))
+                        + abs((0.50 * lumaN) + (-1.0 * lumaM) + (0.50 * lumaS))
+                        + abs((0.25 * lumaNE) + (-0.5 * lumaE) + (0.25 * lumaSE)))
 
+            horzSpan = edgeHorz >= edgeVert
 
+            if horzSpan:
+                gradientN = abs(lumaN - lumaM)
+                gradientS = abs(lumaS - lumaM)
+                gradient = max(gradientN, gradientS)
 
+                posN = np.array([x, y - 1])
+                posP = np.array([x, y + 1])
+                offNP = np.array([0, 1])
+            else:
+                gradientW = abs(lumaW - lumaM)
+                gradientE = abs(lumaE - lumaM)
+                gradient = max(gradientW, gradientE)
 
+                posN = np.array([x - 1, y])
+                posP = np.array([x + 1, y])
+                offNP = np.array([1, 0])
+
+            doneN,doneP = False, False
+            for i in range(FXAA_SEARCH_STEPS):
+                if FXAA_SEARCH_ACCELERATION == 1:
+                    if not doneN:
+                        lumaEndN = lum[posN]
+                    if not doneP:
+                        lumaEndP = lum[posP]
+                else:
+                    raise Exception("Not implmented with FXAA_SEARCH_ACCELERATION>1 yet")
+                doneN = doneN or bool(abs(lumaEndN - lumaM) >= gradient)
+                doneP = doneP or bool(abs(lumaEndP - lumaM) >= gradient)
+                if doneN and doneP: break
+
+            if not doneN:
+                posN -= offNP
+            if not doneP:
+                posP += offNP
+
+            posM = (posN + posP) * 0.5
+            indM = posM.astype(int)
+            rgbbM = view[indM]
+            finalColor = rgbbM * (1.0 - blendL) + rgbL * blendL
+            retMat[y,x]=finalColor
+    return retMat
 
 
 #Operational Fragment Shaders
