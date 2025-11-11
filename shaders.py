@@ -70,41 +70,72 @@ def FXAA(view,lum):
             if horzSpan:
                 gradientN = abs(lumaN - lumaM)
                 gradientS = abs(lumaS - lumaM)
-                gradient = max(gradientN, gradientS)
+                gradient = gradientN if gradientN > gradientS else gradientS
 
-                posN = np.array([x, y - 1])
-                posP = np.array([x, y + 1])
-                offNP = np.array([0, 1])
+                posN_x = x
+                posN_y = y - 1
+                posP_x = x
+                posP_y = y + 1
+
+                off_x = 0
+                off_y = 1
+
+
             else:
                 gradientW = abs(lumaW - lumaM)
                 gradientE = abs(lumaE - lumaM)
-                gradient = max(gradientW, gradientE)
+                gradient = gradientW if gradientW > gradientE else gradientE
 
-                posN = np.array([x - 1, y])
-                posP = np.array([x + 1, y])
-                offNP = np.array([1, 0])
+                posN_x = x - 1
+                posN_y = y
+                posP_x = x + 1
+                posP_y = y
 
+                off_x = 1
+                off_y = 0
+
+            lumaEndN = lumaM
+            lumaEndP = lumaM
             doneN,doneP = False, False
             for i in range(FXAA_SEARCH_STEPS):
                 if FXAA_SEARCH_ACCELERATION == 1:
                     if not doneN:
-                        lumaEndN = lum[posN]
+                        lumaEndN = viewLum[posN_y, posN_x]
                     if not doneP:
-                        lumaEndP = lum[posP]
+                        lumaEndP = viewLum[posP_y, posP_x]
                 else:
                     raise Exception("Not implmented with FXAA_SEARCH_ACCELERATION>1 yet")
-                doneN = doneN or bool(abs(lumaEndN - lumaM) >= gradient)
-                doneP = doneP or bool(abs(lumaEndP - lumaM) >= gradient)
+
+
+                if abs(lumaEndN - lumaM) >= gradient:
+                    doneN = True
+                if abs(lumaEndP - lumaM) >= gradient:
+                    doneP = True
+
+
                 if doneN and doneP: break
 
             if not doneN:
-                posN -= offNP
+                posN_x -= off_x
+                posN_y -= off_y
+                if posN_x < 0:
+                    posN_x = 0
+                if posN_y < 0:
+                    posN_y = 0
             if not doneP:
-                posP += offNP
+                posP_x += off_x
+                posP_y += off_y
+                if posP_x >= width:
+                    posP_x = width - 1
+                if posP_y >= height:
+                    posP_y = height - 1
 
-            posM = (posN + posP) * 0.5
-            indM = posM.astype(int)
-            rgbbM = view[indM]
+            posM_x = (posN_x + posP_x) * 0.5
+            posM_y = (posN_y + posP_y) * 0.5
+            indM_x = int(posM_x)
+            indM_y = int(posM_y)
+
+            rgbbM = view[indM_y, indM_x]
             finalColor = rgbbM * (1.0 - blendL) + rgbL * blendL
             retMat[y,x]=finalColor
     return retMat

@@ -159,7 +159,7 @@ if __name__ == '__main__':
                     zbuffer[y,x] = parameters.LIGHT_POS[2]
 
 
-        FXAA(view,parameters.LUM_VECT)
+        view = FXAA(view,parameters.LUM_VECT)/255
 
         #Calculating and displaying new exponentially weighted average
         FPS = 1/(time() - t)
