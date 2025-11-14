@@ -14,10 +14,10 @@ CULLING = True
 #Anti-Aliasing parameters
 
 #Luminance vector (dotted with color to find luminance)
-LUM_VECT = np.array([(0.587/0.299),1,0]).astype(np.float32)/255
+LUM_VECT = np.array([0.299, 0.587, 0.114]).astype(np.float32)
 #Minimum local contrast to apply FXAA
 FXAA_EDGE_THRESHOLD = 1/8
-FXAA_EDGE_THRESHOLD_MIN = 1/16
+FXAA_EDGE_THRESHOLD_MIN = 1/32
 
 FXAA_SUBPIX = 1.0
 FXAA_SUBPIX_TRIM = 1/4

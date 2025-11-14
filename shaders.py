@@ -13,17 +13,17 @@ from parameters import FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD, FXAA_SUBPIX
 
 #Fast Approximate Anti-Aliasing
 #(Based off the paper, credits to nvidia)
-@numba.njit()
+@numba.njit(parallel = True)
 def FXAA(view,lum):
-    view = view.astype(np.float32)
+    view = view.astype(np.float32)/255
+    outp = np.zeros(view.shape,dtype=np.float32)
     lum = lum.astype(np.float32)
     viewLum = (view[:, :, 0] * lum[0] +
                view[:, :, 1] * lum[1] +
                view[:, :, 2] * lum[2])
     height,width = viewLum.shape
-    retMat = view.copy()
 
-    for y in range(1,height-1):
+    for y in numba.prange(1,height-1):
         for x in range(1,width-1):
             rgbN = view[y - 1, x]
             rgbS = view[y + 1, x]
@@ -48,7 +48,9 @@ def FXAA(view,lum):
             rangeMin = min(lumaN, min(lumaS, min(lumaE, min(lumaW, lumaM))))
             rangeMax = max(lumaN, max(lumaS, max(lumaE, max(lumaW, lumaM))))
             rnge = rangeMax-rangeMin
-            if rnge < max(FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD*rangeMax): continue
+            if rnge < max(FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD*rangeMax):
+                outp[y][x]=view[y][x]
+                continue
 
             lumaL = (lumaN+lumaW+lumaS+lumaE) * .25
             rangeL = abs(lumaL-lumaM)
@@ -115,6 +117,13 @@ def FXAA(view,lum):
 
                 if doneN and doneP: break
 
+                if not doneN:
+                    posN_x -= off_x
+                    posN_y -= off_y
+                if not doneP:
+                    posP_x += off_x
+                    posP_y += off_y
+
             if not doneN:
                 posN_x -= off_x
                 posN_y -= off_y
@@ -137,8 +146,8 @@ def FXAA(view,lum):
 
             rgbbM = view[indM_y, indM_x]
             finalColor = rgbbM * (1.0 - blendL) + rgbL * blendL
-            retMat[y,x]=finalColor
-    return retMat
+            outp[y,x]=finalColor
+    return outp * 255
 
 
 #Operational Fragment Shaders

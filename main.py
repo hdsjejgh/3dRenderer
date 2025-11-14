@@ -161,6 +161,7 @@ if __name__ == '__main__':
 
         view = FXAA(view,parameters.LUM_VECT)/255
 
+
         #Calculating and displaying new exponentially weighted average
         FPS = 1/(time() - t)
         averageFPS = ALPHA * averageFPS + (1-ALPHA) * FPS
