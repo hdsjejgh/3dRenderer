@@ -159,7 +159,7 @@ if __name__ == '__main__':
                     zbuffer[y,x] = parameters.LIGHT_POS[2]
 
 
-        view = FXAA(view,parameters.LUM_VECT)/255
+        view = FXAA(view,parameters.LUM_VECT)
 
 
         #Calculating and displaying new exponentially weighted average

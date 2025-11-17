@@ -17,15 +17,39 @@ CULLING = True
 LUM_VECT = np.array([0.299, 0.587, 0.114]).astype(np.float32)
 #Minimum local contrast to apply FXAA
 FXAA_EDGE_THRESHOLD = 1/8
-FXAA_EDGE_THRESHOLD_MIN = 1/32
+#1/3 - too little
+#1/4 - low quality
+#1/8 - high quality
+#1/16- overkill
 
-FXAA_SUBPIX = 1.0
+#stops processing of darks
+FXAA_EDGE_THRESHOLD_MIN = 1/32
+#1/32 - visinle limit
+#1/16 - high quality
+#1/12 - upper limit
+
+#FXAA_SUBPIX = 1.0
+#controls removal of subpix aliasing
 FXAA_SUBPIX_TRIM = 1/4
+#1/2 - low removal
+#1/3 - medium removal
+#1/4 - default removal
+#1/8 - high removal
+#0   - complete removal
+
+#partly overrides the above
 FXAA_SUBPIX_CAP = 3/4
+#3/4 - default amount of filtering
+#7/8 - high amount of filtering
+#1   - no capping or filtering
+
 FXAA_SUBPIX_TRIM_SCALE = 1/(1-FXAA_SUBPIX_TRIM)
 
+#max search steps
 FXAA_SEARCH_STEPS = 5
+#step size in search
 FXAA_SEARCH_ACCELERATION = 1
+#controls when to stop searching
 FXAA_SEARCH_THRESHOLD = 1/4
 
 #Global Vectors

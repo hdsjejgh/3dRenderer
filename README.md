@@ -60,7 +60,8 @@ Drag and scroll to rotate and zoom.
   * ~~Gouruad~~
   * ~~Lambertian~~ 
 
-* Add Anti-Aliasing
+* ~~Add Anti-Aliasing~~
+  * ~~FXAA~~
 
 * Add built in recording
 
