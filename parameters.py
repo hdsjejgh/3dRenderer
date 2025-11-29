@@ -13,10 +13,17 @@ CULLING = True
 
 #Anti-Aliasing parameters
 
+#What kind of antialiasing to run
+AA = {
+    0:None,
+    1:"FXAA"
+#change the key to change the option
+}[1]
+
 #Luminance vector (dotted with color to find luminance)
 LUM_VECT = np.array([0.299, 0.587, 0.114]).astype(np.float32)
 #Minimum local contrast to apply FXAA
-FXAA_EDGE_THRESHOLD = 1/8
+FXAA_EDGE_THRESHOLD = 1/4
 #1/3 - too little
 #1/4 - low quality
 #1/8 - high quality
@@ -24,7 +31,7 @@ FXAA_EDGE_THRESHOLD = 1/8
 
 #stops processing of darks
 FXAA_EDGE_THRESHOLD_MIN = 1/32
-#1/32 - visinle limit
+#1/32 - visible limit
 #1/16 - high quality
 #1/12 - upper limit
 
@@ -46,7 +53,7 @@ FXAA_SUBPIX_CAP = 3/4
 FXAA_SUBPIX_TRIM_SCALE = 1/(1-FXAA_SUBPIX_TRIM)
 
 #max search steps
-FXAA_SEARCH_STEPS = 5
+FXAA_SEARCH_STEPS = 3
 #step size in search
 FXAA_SEARCH_ACCELERATION = 1
 #controls when to stop searching

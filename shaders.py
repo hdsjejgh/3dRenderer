@@ -2,8 +2,14 @@ import parameters
 import numpy as np
 import numba
 
-from parameters import FXAA_EDGE_THRESHOLD_MIN, FXAA_EDGE_THRESHOLD, FXAA_SUBPIX_TRIM, FXAA_SUBPIX_TRIM_SCALE, FXAA_SUBPIX_CAP, FXAA_SEARCH_STEPS, FXAA_SEARCH_ACCELERATION
-
+#lowkey forgot to put parameters. before every use of these so im just defining them like this here so its easier :wilted_rose:
+FXAA_EDGE_THRESHOLD_MIN = parameters.FXAA_EDGE_THRESHOLD_MIN
+FXAA_EDGE_THRESHOLD = parameters.FXAA_EDGE_THRESHOLD
+FXAA_SUBPIX_TRIM = parameters.FXAA_SUBPIX_TRIM
+FXAA_SUBPIX_TRIM_SCALE = parameters.FXAA_SUBPIX_TRIM_SCALE
+FXAA_SUBPIX_CAP = parameters.FXAA_SUBPIX_CAP
+FXAA_SEARCH_STEPS = parameters.FXAA_SEARCH_STEPS
+FXAA_SEARCH_ACCELERATION = parameters.FXAA_SEARCH_ACCELERATION
 
 #-----------------------------------------------#
 
@@ -145,10 +151,8 @@ def FXAA(view,lum):
                     posP_y += off_y
 
             #gets point in the middle of the search line
-            posM_x = (posN_x + posP_x) * 0.5
-            posM_y = (posN_y + posP_y) * 0.5
-            indM_x = int(posM_x)
-            indM_y = int(posM_y)
+            indM_x = (posN_x + posP_x) // 2
+            indM_y = (posN_y + posP_y) // 2
 
             rgbbM = view[indM_y, indM_x]
             finalColor = rgbbM * (1.0 - blendL) + rgbL * blendL

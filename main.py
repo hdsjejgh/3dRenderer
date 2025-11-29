@@ -158,8 +158,8 @@ if __name__ == '__main__':
                     view[y, x] = np.clip(view[y, x]+np.array([0, light_color, light_color]).astype(np.uint8),a_min=0,a_max=255)
                     zbuffer[y,x] = parameters.LIGHT_POS[2]
 
-
-        view = FXAA(view,parameters.LUM_VECT)
+        if parameters.AA=="FXAA":
+            view = FXAA(view,parameters.LUM_VECT)
 
 
         #Calculating and displaying new exponentially weighted average
