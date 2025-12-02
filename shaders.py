@@ -168,7 +168,7 @@ def FXAA(view,lum):
 
 #Rasterizes a given face using the lambertian shader (no textures)
 @numba.njit()
-def rasterize_lambertian_textureless(coords, view,zbuffer,normal,coords_3d,LIGHT_POS):
+def rasterize_lambertian_textureless(coords, view,zbuffer,normal,coords_3d,LIGHTS):
 
     A, B, C = coords
 
@@ -243,16 +243,21 @@ def rasterize_lambertian_textureless(coords, view,zbuffer,normal,coords_3d,LIGHT
                     if Z >= zbuffer[y, x]:
                         continue
                     zbuffer[y, x] = Z
-                light_dir = (LIGHT_POS-surface_point).astype(np.float32)
-                light_dir /= np.linalg.norm(light_dir)
-                shade = max(normal.dot(light_dir)*255,0)
+                for i, LIGHT_POS in enumerate(LIGHTS):
+                    light_dir = (LIGHT_POS-surface_point).astype(np.float32)
+                    light_dir /= np.linalg.norm(light_dir)
+                    shade = max(normal.dot(light_dir)*255,0)
+                    color = np.array([shade,shade,shade])
 
-                view[y, x] = np.array([shade,shade,shade],dtype=np.int8)
+                    if i == 0:
+                        view[y, x] = color.astype(np.uint8)
+                    else:
+                        view[y, x] = np.clip(view[y, x] + color, a_min=0, a_max=255).astype(np.uint8)
 
 
 #Rasterizes a given face using the lambertian shader (textures)
 @numba.njit()
-def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturecoords,texture,LIGHT_POS):
+def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturecoords,texture,LIGHTS):
 
     A, B, C = coords
 
@@ -343,23 +348,27 @@ def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturec
                         continue
                     zbuffer[y, x] = Z
 
-                #Unit vector from point on surface to the light source
-                light_dir = (LIGHT_POS-surface_point).astype(np.float32)
-                light_dir /= np.linalg.norm(light_dir)
+                for i, LIGHT_POS in enumerate(LIGHTS):
+                    #Unit vector from point on surface to the light source
+                    light_dir = (LIGHT_POS-surface_point).astype(np.float32)
+                    light_dir /= np.linalg.norm(light_dir)
 
-                #The magnitude of lighting
-                shade = max(normal.dot(light_dir),0)
+                    #The magnitude of lighting
+                    shade = max(normal.dot(light_dir),0)
 
-                #final color of pixel
-                color = base[::-1]*shade
+                    #final color of pixel
+                    color = base[::-1]*shade
 
-                view[y, x] = color.astype(np.int8)
+                    if i == 0:
+                        view[y, x] = color.astype(np.uint8)
+                    else:
+                        view[y, x] = np.clip(view[y, x] + color, a_min=0, a_max=255).astype(np.uint8)
 
 
 #Gouraud
 
 @numba.njit()
-def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHT_POS):
+def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHTS):
 
     A, B, C = coords
 
@@ -436,22 +445,25 @@ def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHT_P
                         continue
                     zbuffer[y, x] = Z
 
-                point_to_light = -(LIGHT_POS - surface_point)
-                point_to_light /= np.linalg.norm(point_to_light)
+                for i, LIGHT_POS in enumerate(LIGHTS):
+                    point_to_light = -(LIGHT_POS - surface_point)
+                    point_to_light /= np.linalg.norm(point_to_light)
 
-                # Intensity of light at the point
-                color = np.array(3 * [min(255, 255*(
-                        max(n1.dot(point_to_light), 0.0) * alpha +
-                        max(n2.dot(point_to_light), 0.0) * beta +
-                        max(n3.dot(point_to_light), 0.0) * gamma) +
-                                              parameters.AMBIENT_INTENSITY)])
+                    # Intensity of light at the point
+                    color = np.array(3 * [min(255, 255*(
+                            max(n1.dot(point_to_light), 0.0) * alpha +
+                            max(n2.dot(point_to_light), 0.0) * beta +
+                            max(n3.dot(point_to_light), 0.0) * gamma) +
+                                                  parameters.AMBIENT_INTENSITY)])
 
-
-                view[y, x] = color
+                    if i == 0:
+                        view[y, x] = color.astype(np.uint8)
+                    else:
+                        view[y, x] = np.clip(view[y, x] + color, a_min=0, a_max=255).astype(np.uint8)
 
 
 @numba.njit()
-def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoords,texture,LIGHT_POS):
+def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoords,texture,LIGHTS):
 
     A, B, C = coords
 
@@ -543,27 +555,30 @@ def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoo
                         continue
                     zbuffer[y, x] = Z
 
-                point_to_light = -(LIGHT_POS-surface_point)
-                point_to_light/=np.linalg.norm(point_to_light)
+                for i, LIGHT_POS in enumerate(LIGHTS):
+                    point_to_light = -(LIGHT_POS-surface_point)
+                    point_to_light/=np.linalg.norm(point_to_light)
 
-                #Intensity of light at the point
-                intensity = np.array(3 * [min(255, 255 * (
-                        max(n1.dot(point_to_light), 0.0) * alpha +
-                        max(n2.dot(point_to_light), 0.0) * beta +
-                        max(n3.dot(point_to_light), 0.0) * gamma) +
-                                          parameters.AMBIENT_INTENSITY)])
+                    #Intensity of light at the point
+                    intensity = np.array(3 * [min(255, 255 * (
+                            max(n1.dot(point_to_light), 0.0) * alpha +
+                            max(n2.dot(point_to_light), 0.0) * beta +
+                            max(n3.dot(point_to_light), 0.0) * gamma) +
+                                              parameters.AMBIENT_INTENSITY)])
 
-                color = base[::-1]*intensity/255
+                    color = base[::-1]*intensity/255
 
-
-                view[y, x] = color
+                    if i == 0:
+                        view[y, x] = color.astype(np.uint8)
+                    else:
+                        view[y, x] = np.clip(view[y, x] + color, a_min=0, a_max=255).astype(np.uint8)
 
 
 
 #Textured Phong shader
 #Has to be separated from nontextured phong because numba likes being difficult
 @numba.njit() #Numba used to provide massive speedups
-def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d, texturecoords=None, texture=np.empty((1,1),np.int64),LIGHT_POS=parameters.LIGHT_POS):
+def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS, texturecoords=None, texture=np.empty((1,1),np.int64),):
     #All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float32)
     #Vertex normals of the 3 vertices
@@ -659,46 +674,52 @@ def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d, textu
                 interpolated_normal = alpha * n1 + beta * n2 + gamma * n3
                 interpolated_normal /= np.sqrt(np.dot(interpolated_normal, interpolated_normal))
 
-                #Direction from the point to the global light source
-                light_dir = LIGHT_POS - surface_point
-                light_dir /= np.sqrt(np.dot(light_dir, light_dir))
+                for i,LIGHT_POS in enumerate(LIGHTS):
+                    #Direction from the point to the global light source
+                    light_dir = LIGHT_POS - surface_point
+                    light_dir /= np.sqrt(np.dot(light_dir, light_dir))
 
-                #Direction from the point to global camera position
-                view_dir = parameters.CAMERA_POS - surface_point
-                view_dir /= np.sqrt(np.dot(view_dir, view_dir))
+                    #Direction from the point to global camera position
+                    view_dir = parameters.CAMERA_POS - surface_point
+                    view_dir /= np.sqrt(np.dot(view_dir, view_dir))
 
-                # The Diffuse lighting
-                #While i was cleaning up i tried again and it works just fine now???
-                diffuse = max(interpolated_normal.dot(-light_dir), 0)
+                    # The Diffuse lighting
+                    #While i was cleaning up i tried again and it works just fine now???
+                    diffuse = max(interpolated_normal.dot(-light_dir), 0)
 
-                #(What was bui tuong phong on about??)
-                #Calculates reflection direction vector
-                reflect_dir = 2.0 * np.dot(interpolated_normal, light_dir) * interpolated_normal - light_dir
-                reflect_dir /= np.sqrt(np.dot(reflect_dir, reflect_dir))
+                    #(What was bui tuong phong on about??)
+                    #Calculates reflection direction vector
+                    reflect_dir = 2.0 * np.dot(interpolated_normal, light_dir) * interpolated_normal - light_dir
+                    reflect_dir /= np.sqrt(np.dot(reflect_dir, reflect_dir))
 
-                #Cos of angle between direction of reflection and direction to camera
-                spec_angle = max(0.0, np.dot(reflect_dir, view_dir))
+                    #Cos of angle between direction of reflection and direction to camera
+                    spec_angle = max(0.0, np.dot(reflect_dir, view_dir))
 
-                #Specular highlight calculated
-                specular = parameters.REFLECTIVITY_CONSTANT * (spec_angle ** parameters.PHONG_EXPONENT)
+                    #Specular highlight calculated
+                    specular = parameters.REFLECTIVITY_CONSTANT * (spec_angle ** parameters.PHONG_EXPONENT)
 
-                #Final lighting intensity
-                intensity = parameters.AMBIENT_INTENSITY + diffuse *255 + specular*255
+                    #Final lighting intensity
+                    intensity = parameters.AMBIENT_INTENSITY + diffuse *255 + specular*255
 
-                #Gamma correction
-                #Also puts intensity in unit range
-                intensity = (intensity / 255.0) ** parameters.GAMMA
-                intensity = min(intensity, 1.0)
+                    #Gamma correction
+                    #Also puts intensity in unit range
+                    intensity = (intensity / 255.0) ** parameters.GAMMA
+                    intensity = min(intensity, 1.0)
 
-                #Final color calculated based on the color of pixel and intensity of pixel
-                #The color of the model is converted to BGR from RGB as well
-                color = np.array([base[2]*intensity,base[1]*intensity,base[0]*intensity])
-                view[y, x] = color.astype(np.uint8)
+                    #Final color calculated based on the color of pixel and intensity of pixel
+                    #The color of the model is converted to BGR from RGB as well
+                    color = np.array([base[2]*intensity,base[1]*intensity,base[0]*intensity])
+
+                    if i == 0:
+                        view[y,x]=color.astype(np.uint8)
+                    else:
+                        view[y, x] = np.clip(view[y, x]+color,a_min=0,a_max=255).astype(np.uint8)
+
 
 #Nontextured Phong shader
 #Has to be separated from textured phong because numba likes being difficult
 @numba.njit()
-def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d, color = (255,255,255),LIGHT_POS=parameters.LIGHT_POS,):
+def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d,LIGHTS, color = (255,255,255),):
 
     # All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float32)
@@ -784,41 +805,46 @@ def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d, co
                 interpolated_normal = alpha * n1 + beta * n2 + gamma * n3
                 interpolated_normal /= np.sqrt(np.dot(interpolated_normal, interpolated_normal))
 
-                # Direction from the point to the global light source
-                light_dir = LIGHT_POS - surface_point
-                light_dir /= np.sqrt(np.dot(light_dir, light_dir))
+                for i, LIGHT_POS in enumerate(LIGHTS):
 
-                # Direction from the point to global camera position
-                view_dir = parameters.CAMERA_POS - surface_point
-                view_dir /= np.sqrt(np.dot(view_dir, view_dir))
+                    # Direction from the point to the global light source
+                    light_dir = LIGHT_POS - surface_point
+                    light_dir /= np.sqrt(np.dot(light_dir, light_dir))
 
-                # The Diffuse lighting
-                # While i was cleaning up i tried again and it works just fine now???
-                diffuse = max(interpolated_normal.dot(-light_dir), 0)
+                    # Direction from the point to global camera position
+                    view_dir = parameters.CAMERA_POS - surface_point
+                    view_dir /= np.sqrt(np.dot(view_dir, view_dir))
 
-                # (What was bui tuong phong on about??)
-                # Calculates reflection direction vector
-                reflect_dir = 2.0 * np.dot(interpolated_normal, light_dir) * interpolated_normal - light_dir
-                reflect_dir /= np.sqrt(np.dot(reflect_dir, reflect_dir))
+                    # The Diffuse lighting
+                    # While i was cleaning up i tried again and it works just fine now???
+                    diffuse = max(interpolated_normal.dot(-light_dir), 0)
 
-                # Cos of angle between direction of reflection and direction to camera
-                spec_angle = max(0.0, np.dot(reflect_dir, view_dir))
+                    # (What was bui tuong phong on about??)
+                    # Calculates reflection direction vector
+                    reflect_dir = 2.0 * np.dot(interpolated_normal, light_dir) * interpolated_normal - light_dir
+                    reflect_dir /= np.sqrt(np.dot(reflect_dir, reflect_dir))
 
-                # Specular highlight calculated
-                specular = parameters.REFLECTIVITY_CONSTANT * (spec_angle ** parameters.PHONG_EXPONENT)
+                    # Cos of angle between direction of reflection and direction to camera
+                    spec_angle = max(0.0, np.dot(reflect_dir, view_dir))
 
-                # Final lighting intensity
-                intensity = parameters.AMBIENT_INTENSITY + diffuse * 255 + specular * 255
+                    # Specular highlight calculated
+                    specular = parameters.REFLECTIVITY_CONSTANT * (spec_angle ** parameters.PHONG_EXPONENT)
 
-                # Gamma correction
-                # Also puts intensity in unit range
-                intensity = (intensity / 255.0) ** parameters.GAMMA
-                intensity = min(intensity, 1.0)
+                    # Final lighting intensity
+                    intensity = parameters.AMBIENT_INTENSITY + diffuse * 255 + specular * 255
 
-                # Final color calculated based on the color of pixel and intensity of pixel
-                # The color of the model is converted to BGR from RGB as well
-                color = np.array([base[2] * intensity, base[1] * intensity, base[0] * intensity])
-                view[y, x] = color.astype(np.uint8)
+                    # Gamma correction
+                    # Also puts intensity in unit range
+                    intensity = (intensity / 255.0) ** parameters.GAMMA
+                    intensity = min(intensity, 1.0)
+
+                    # Final color calculated based on the color of pixel and intensity of pixel
+                    # The color of the model is converted to BGR from RGB as well
+                    color = np.array([base[2] * intensity, base[1] * intensity, base[0] * intensity])
+                    if i == 0:
+                        view[y, x] = color.astype(np.uint8)
+                    else:
+                        view[y, x] = np.clip(view[y, x] + color, a_min=0, a_max=255).astype(np.uint8)
 
 
 

@@ -67,9 +67,9 @@ VIEW_VECTOR = np.array([0,0,1],dtype = 'float32')
 #Technically not what it actually is in the display (its closer to <0,0,-200>), but it being closer than it makes the phong lighting look nicer
 CAMERA_POS = np.array([0,0,-200],dtype = 'float32')
 #The light source position vector
-LIGHT_POS = np.array([200,0,0],dtype = 'float64')
-#The light direction vector (set to face the origin)
-LIGHT_VECTOR = -LIGHT_POS/np.linalg.norm(LIGHT_POS)
+LIGHT_POS = np.array([200,0,0],dtype = 'float32')
+
+
 
 
 #Lighting Parameters

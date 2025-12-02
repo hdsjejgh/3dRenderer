@@ -9,7 +9,7 @@ from lightFunctions import *
 
 
 #Display function for lambertian shading
-def lambertian(model,view,zbuffer):
+def lambertian(model,view,zbuffer,lights):
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -33,7 +33,7 @@ def lambertian(model,view,zbuffer):
                     zbuffer=zbuffer,
                     coords_3d=face.points,
                     normal=face.normal,
-                    LIGHT_POS=parameters.LIGHT_POS
+                    LIGHTS = lights
 
             )
     elif model.textured:
@@ -54,12 +54,12 @@ def lambertian(model,view,zbuffer):
                 coords_3d=face.points,
                 texturecoords=texture_points,
                 texture=texture,
-                LIGHT_POS=parameters.LIGHT_POS
+                LIGHTS = lights
             )
 
 
 #Display function for gouraud shading
-def gouraud(model,view,zbuffer):
+def gouraud(model,view,zbuffer,lights):
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -82,7 +82,7 @@ def gouraud(model,view,zbuffer):
                     zbuffer=zbuffer,
                     coords_3d=face.points,
                     normals=face.avNorms,
-                    LIGHT_POS=parameters.LIGHT_POS
+                    LIGHTS=lights
 
             )
 
@@ -104,7 +104,7 @@ def gouraud(model,view,zbuffer):
                 coords_3d=face.points,
                 texturecoords=texture_points,
                 texture=texture,
-                LIGHT_POS=parameters.LIGHT_POS
+                LIGHTS=lights
             )
 
 
@@ -112,7 +112,7 @@ def gouraud(model,view,zbuffer):
 
 
 #Display function for phong shading
-def phong(model,view,zbuffer):
+def phong(model,view,zbuffer,lights):
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -136,7 +136,7 @@ def phong(model,view,zbuffer):
                     av_normals=face.avNorms,
                     coords_3d=face.points,
                     color=(255,255,255),
-                    LIGHT_POS=parameters.LIGHT_POS,
+                    LIGHTS=lights,
             )
 
     #If model is textured
@@ -158,6 +158,6 @@ def phong(model,view,zbuffer):
                 coords_3d=face.points,
                 texturecoords=texture_points,
                 texture=texture,
-                LIGHT_POS=parameters.LIGHT_POS,
+                LIGHTS=lights,
 
             )
