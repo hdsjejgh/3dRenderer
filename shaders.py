@@ -359,7 +359,7 @@ def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturec
 #Gouraud
 
 @numba.njit()
-def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHT_VECTOR):
+def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHT_POS):
 
     A, B, C = coords
 
@@ -436,18 +436,22 @@ def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHT_V
                         continue
                     zbuffer[y, x] = Z
 
-                #Intensity of light at the point
-                color = np.array(3*[min(255,255*(
-                                            max(n1.dot(LIGHT_VECTOR),0)*alpha+
-                                             max(n2.dot(LIGHT_VECTOR),0)*beta+
-                                            max(n3.dot(LIGHT_VECTOR),0)*gamma)+
-                                        parameters.AMBIENT_INTENSITY)])
+                point_to_light = -(LIGHT_POS - surface_point)
+                point_to_light /= np.linalg.norm(point_to_light)
+
+                # Intensity of light at the point
+                color = np.array(3 * [min(255, 255*(
+                        max(n1.dot(point_to_light), 0.0) * alpha +
+                        max(n2.dot(point_to_light), 0.0) * beta +
+                        max(n3.dot(point_to_light), 0.0) * gamma) +
+                                              parameters.AMBIENT_INTENSITY)])
+
 
                 view[y, x] = color
 
 
 @numba.njit()
-def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoords,texture,LIGHT_VECTOR):
+def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoords,texture,LIGHT_POS):
 
     A, B, C = coords
 
@@ -539,11 +543,14 @@ def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoo
                         continue
                     zbuffer[y, x] = Z
 
+                point_to_light = -(LIGHT_POS-surface_point)
+                point_to_light/=np.linalg.norm(point_to_light)
+
                 #Intensity of light at the point
                 intensity = np.array(3 * [min(255, 255 * (
-                        max(n1.dot(LIGHT_VECTOR), 0) * alpha +
-                        max(n2.dot(LIGHT_VECTOR), 0) * beta +
-                        max(n3.dot(LIGHT_VECTOR), 0) * gamma) +
+                        max(n1.dot(point_to_light), 0.0) * alpha +
+                        max(n2.dot(point_to_light), 0.0) * beta +
+                        max(n3.dot(point_to_light), 0.0) * gamma) +
                                           parameters.AMBIENT_INTENSITY)])
 
                 color = base[::-1]*intensity/255
@@ -556,7 +563,7 @@ def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoo
 #Textured Phong shader
 #Has to be separated from nontextured phong because numba likes being difficult
 @numba.njit() #Numba used to provide massive speedups
-def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d, texturecoords=None, texture=np.empty((1,1),np.int64),LIGHT_POS=parameters.LIGHT_POS, LIGHT_VECTOR=parameters.LIGHT_VECTOR):
+def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d, texturecoords=None, texture=np.empty((1,1),np.int64),LIGHT_POS=parameters.LIGHT_POS):
     #All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float32)
     #Vertex normals of the 3 vertices
@@ -691,7 +698,7 @@ def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d, textu
 #Nontextured Phong shader
 #Has to be separated from textured phong because numba likes being difficult
 @numba.njit()
-def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d, color = (255,255,255),LIGHT_POS=parameters.LIGHT_POS, LIGHT_VECTOR=parameters.LIGHT_VECTOR):
+def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d, color = (255,255,255),LIGHT_POS=parameters.LIGHT_POS,):
 
     # All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float32)

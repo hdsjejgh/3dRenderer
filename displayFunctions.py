@@ -82,7 +82,7 @@ def gouraud(model,view,zbuffer):
                     zbuffer=zbuffer,
                     coords_3d=face.points,
                     normals=face.avNorms,
-                    LIGHT_VECTOR=parameters.LIGHT_VECTOR
+                    LIGHT_POS=parameters.LIGHT_POS
 
             )
 
@@ -104,7 +104,7 @@ def gouraud(model,view,zbuffer):
                 coords_3d=face.points,
                 texturecoords=texture_points,
                 texture=texture,
-                LIGHT_VECTOR=parameters.LIGHT_VECTOR
+                LIGHT_POS=parameters.LIGHT_POS
             )
 
 
@@ -137,7 +137,6 @@ def phong(model,view,zbuffer):
                     coords_3d=face.points,
                     color=(255,255,255),
                     LIGHT_POS=parameters.LIGHT_POS,
-                    LIGHT_VECTOR=parameters.LIGHT_VECTOR
             )
 
     #If model is textured
@@ -160,5 +159,5 @@ def phong(model,view,zbuffer):
                 texturecoords=texture_points,
                 texture=texture,
                 LIGHT_POS=parameters.LIGHT_POS,
-                LIGHT_VECTOR=parameters.LIGHT_VECTOR
+
             )

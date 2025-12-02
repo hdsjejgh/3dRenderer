@@ -18,7 +18,7 @@ AA = {
     0:None,
     1:"FXAA"
 #change the key to change the option
-}[1]
+}[0]
 
 #Luminance vector (dotted with color to find luminance)
 LUM_VECT = np.array([0.299, 0.587, 0.114]).astype(np.float32)
@@ -67,7 +67,7 @@ VIEW_VECTOR = np.array([0,0,1],dtype = 'float32')
 #Technically not what it actually is in the display (its closer to <0,0,-200>), but it being closer than it makes the phong lighting look nicer
 CAMERA_POS = np.array([0,0,-200],dtype = 'float32')
 #The light source position vector
-LIGHT_POS = np.array([200,0,0],dtype = 'float32')
+LIGHT_POS = np.array([200,0,0],dtype = 'float64')
 #The light direction vector (set to face the origin)
 LIGHT_VECTOR = -LIGHT_POS/np.linalg.norm(LIGHT_POS)
 
