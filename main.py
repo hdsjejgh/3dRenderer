@@ -7,7 +7,6 @@ cv.namedWindow("3d Render")
 
 #Previous mouse coordinates; used to calculate mouse movement
 prevx,prevy = -1,-1
-LIGHTS =  []
 
 
 #Font info for the display
@@ -52,12 +51,12 @@ def mouse_callback(event, x, y, flags, params):
 
             #Rotations are scaled such that dragging across half the screen rotats the model 90 degrees
 
-            for i in range(len(LIGHTS)):
-                lightRot('y',(-dx/parameters.WIDTH)*180,i,LIGHTS)
+            for i in range(len(LIGHTS_INFO)):
+                lightRot('y',(-dx/parameters.WIDTH)*180,i,LIGHTS_INFO)
             Model.rotate('y',(-dx/parameters.WIDTH)*180,selfcc=False)
 
-            for i in range(len(LIGHTS)):
-                lightRot('x', (dy / parameters.HEIGHT) * 180,i,LIGHTS)
+            for i in range(len(LIGHTS_INFO)):
+                lightRot('x', (dy / parameters.HEIGHT) * 180,i,LIGHTS_INFO)
             Model.rotate('x', (dy / parameters.HEIGHT) * 180,selfcc=False)
 
             Model.updateFaces()
@@ -67,13 +66,13 @@ def mouse_callback(event, x, y, flags, params):
         #If scrolled up
         if flags>0:
             Model.scale(1.1,[0,0,0])
-            for i in range(len(LIGHTS)):
-                lightScale(1.1,i,LIGHTS)
+            for i in range(len(LIGHTS_INFO)):
+                lightScale(1.1,i,LIGHTS_INFO)
         #If scrolled down
         elif flags<0:
             Model.scale(1/1.1,[0,0,0])
-            for i in range(len(LIGHTS)):
-                lightScale(1/1.1,i,LIGHTS)
+            for i in range(len(LIGHTS_INFO)):
+                lightScale(1/1.1,i,LIGHTS_INFO)
 
 #Sets up mouse callback function
 cv.setMouseCallback("3d Render",mouse_callback)
@@ -81,6 +80,8 @@ cv.setMouseCallback("3d Render",mouse_callback)
 
 #CHANGE THESE THINGS ##########################################
 
+#Pass this as the light info array in any light creation, editing function
+LIGHTS_INFO =  [[],[]]
 
 #The model loaded
 Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
@@ -91,8 +92,8 @@ SHADER = phong
 #Transformations to be done to the model before anything
 def pretransformation():
     pass
-    createLight(200,0,0,LIGHTS)
-    createLight(-200, 0, 0, LIGHTS)
+    createLight(200,0,0,LIGHTS_INFO,0.25)
+    createLight(-200, 0, 0, LIGHTS_INFO)
 
     Model.scale(-3)
     #Model.rotate('x',-90)
@@ -105,8 +106,8 @@ def TransformationLoop():
     # Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
     #Model.twist('y', 1, 0.01, center=100)
-    lightRot('y',1,0,LIGHTS)
-    lightRot('y', 1, 1, LIGHTS)
+    lightRot('y',1,0,LIGHTS_INFO)
+    lightRot('y', 1, 1, LIGHTS_INFO)
 
 
 #######################################################
@@ -138,7 +139,7 @@ if __name__ == '__main__':
         zbuffer = np.full((HEIGHT, WIDTH), np.inf, dtype=np.float32)
 
         # Updates the view
-        SHADER(Model, view, zbuffer,LIGHTS)
+        SHADER(Model, view, zbuffer,LIGHTS_INFO)
 
         #Adds a white dot to the display and zbuffer indicate the origin
         origin = (int(parameters.WIDTH/2),int(parameters.HEIGHT/2))
@@ -146,7 +147,8 @@ if __name__ == '__main__':
             view[origin[1],origin[0]] = np.array([255, 255, 255]).astype(np.uint8)
             zbuffer[origin[1], origin[0]] = 0
 
-        for LIGHT_POS in LIGHTS:
+        intensities = LIGHTS_INFO[1]
+        for i,LIGHT_POS in enumerate(LIGHTS_INFO[0]):
             #Skips light if its behind model
             if LIGHT_POS[2]>parameters.CAMERA_POS[2]:
 
@@ -161,7 +163,7 @@ if __name__ == '__main__':
                         #Makes pixels further from the center of the light darker since it looks better
                         #Does make said pixels black even when above the model, but its a minor thing, ill fix it later
                         dist = (x-LIGHT2Dx)**2+(y-LIGHT2Dy)**2
-                        light_color = 255*.75**(dist/3)
+                        light_color = intensities[i]*255*.75**(dist/3)
 
                         view[y, x] = np.clip(view[y, x]+np.array([light_color, light_color, light_color]),a_min=0,a_max=255).astype(np.uint8)
                         zbuffer[y,x] = LIGHT_POS[2]

@@ -54,7 +54,7 @@ def lambertian(model,view,zbuffer,lights):
                 coords_3d=face.points,
                 texturecoords=texture_points,
                 texture=texture,
-                LIGHTS = lights
+                LIGHTS = np.array(lights)
             )
 
 
@@ -112,7 +112,8 @@ def gouraud(model,view,zbuffer,lights):
 
 
 #Display function for phong shading
-def phong(model,view,zbuffer,lights):
+def phong(model,view,zbuffer,light_info):
+    lights, intensities = light_info
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -159,5 +160,6 @@ def phong(model,view,zbuffer,lights):
                 texturecoords=texture_points,
                 texture=texture,
                 LIGHTS=lights,
+                intensities = intensities
 
             )

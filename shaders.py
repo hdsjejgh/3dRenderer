@@ -578,7 +578,7 @@ def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoo
 #Textured Phong shader
 #Has to be separated from nontextured phong because numba likes being difficult
 @numba.njit() #Numba used to provide massive speedups
-def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS, texturecoords=None, texture=np.empty((1,1),np.int64),):
+def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS, intensities,texturecoords=None, texture=np.empty((1,1),np.int64),):
     #All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float32)
     #Vertex normals of the 3 vertices
@@ -674,14 +674,14 @@ def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS
                 interpolated_normal = alpha * n1 + beta * n2 + gamma * n3
                 interpolated_normal /= np.sqrt(np.dot(interpolated_normal, interpolated_normal))
 
+                # Direction from the point to global camera position
+                view_dir = parameters.CAMERA_POS - surface_point
+                view_dir /= np.sqrt(np.dot(view_dir, view_dir))
+
                 for i,LIGHT_POS in enumerate(LIGHTS):
                     #Direction from the point to the global light source
                     light_dir = LIGHT_POS - surface_point
                     light_dir /= np.sqrt(np.dot(light_dir, light_dir))
-
-                    #Direction from the point to global camera position
-                    view_dir = parameters.CAMERA_POS - surface_point
-                    view_dir /= np.sqrt(np.dot(view_dir, view_dir))
 
                     # The Diffuse lighting
                     #While i was cleaning up i tried again and it works just fine now???
@@ -704,7 +704,7 @@ def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS
                     #Gamma correction
                     #Also puts intensity in unit range
                     intensity = (intensity / 255.0) ** parameters.GAMMA
-                    intensity = min(intensity, 1.0)
+                    intensity = min(intensity, 1.0)*intensities[i]
 
                     #Final color calculated based on the color of pixel and intensity of pixel
                     #The color of the model is converted to BGR from RGB as well
