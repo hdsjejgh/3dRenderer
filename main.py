@@ -84,7 +84,7 @@ cv.setMouseCallback("3d Render",mouse_callback)
 LIGHTS_INFO =  [[],[]]
 
 #The model loaded
-Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
+Model = OBJ_File("models/Shambler.obj",reverseNormals=True,)#texture="textures/Shambler.png")
 # Which shader rasterizing function to use
 # All are in the displayFunctions file
 SHADER = phong

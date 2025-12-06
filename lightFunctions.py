@@ -15,4 +15,4 @@ def lightScale(magnitude,index,LInfo_array):
 def createLight(x,y,z,LInfo_array,intensity=1.0):
     l = np.array([x,y,z],dtype=np.float32)
     LInfo_array[0].append(l)
-    LInfo_array[1].append(intensity)
+    LInfo_array[1].append(float(intensity))

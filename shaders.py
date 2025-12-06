@@ -168,7 +168,7 @@ def FXAA(view,lum):
 
 #Rasterizes a given face using the lambertian shader (no textures)
 @numba.njit()
-def rasterize_lambertian_textureless(coords, view,zbuffer,normal,coords_3d,LIGHTS):
+def rasterize_lambertian_textureless(coords, view,zbuffer,normal,coords_3d,LIGHTS,intensities):
 
     A, B, C = coords
 
@@ -246,7 +246,7 @@ def rasterize_lambertian_textureless(coords, view,zbuffer,normal,coords_3d,LIGHT
                 for i, LIGHT_POS in enumerate(LIGHTS):
                     light_dir = (LIGHT_POS-surface_point).astype(np.float32)
                     light_dir /= np.linalg.norm(light_dir)
-                    shade = max(normal.dot(light_dir)*255,0)
+                    shade = max(normal.dot(light_dir)*255,0)*intensities[i]
                     color = np.array([shade,shade,shade])
 
                     if i == 0:
@@ -257,7 +257,7 @@ def rasterize_lambertian_textureless(coords, view,zbuffer,normal,coords_3d,LIGHT
 
 #Rasterizes a given face using the lambertian shader (textures)
 @numba.njit()
-def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturecoords,texture,LIGHTS):
+def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturecoords,texture,LIGHTS,intensities):
 
     A, B, C = coords
 
@@ -354,7 +354,7 @@ def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturec
                     light_dir /= np.linalg.norm(light_dir)
 
                     #The magnitude of lighting
-                    shade = max(normal.dot(light_dir),0)
+                    shade = max(normal.dot(light_dir),0)*intensities[i]
 
                     #final color of pixel
                     color = base[::-1]*shade
@@ -368,7 +368,7 @@ def rasterize_lambertian_textured(coords, view,zbuffer,normal,coords_3d,texturec
 #Gouraud
 
 @numba.njit()
-def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHTS):
+def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHTS,intensities):
 
     A, B, C = coords
 
@@ -454,7 +454,7 @@ def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHTS)
                             max(n1.dot(point_to_light), 0.0) * alpha +
                             max(n2.dot(point_to_light), 0.0) * beta +
                             max(n3.dot(point_to_light), 0.0) * gamma) +
-                                                  parameters.AMBIENT_INTENSITY)])
+                                                  parameters.AMBIENT_INTENSITY)])*intensities[i]
 
                     if i == 0:
                         view[y, x] = color.astype(np.uint8)
@@ -463,7 +463,7 @@ def rasterize_gouraud_textureless(coords, view,zbuffer,normals,coords_3d,LIGHTS)
 
 
 @numba.njit()
-def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoords,texture,LIGHTS):
+def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoords,texture,LIGHTS,intensities):
 
     A, B, C = coords
 
@@ -564,7 +564,7 @@ def rasterize_gouraud_textured(coords, view,zbuffer,normals,coords_3d,texturecoo
                             max(n1.dot(point_to_light), 0.0) * alpha +
                             max(n2.dot(point_to_light), 0.0) * beta +
                             max(n3.dot(point_to_light), 0.0) * gamma) +
-                                              parameters.AMBIENT_INTENSITY)])
+                                              parameters.AMBIENT_INTENSITY)])*intensities[i]
 
                     color = base[::-1]*intensity/255
 
@@ -685,7 +685,7 @@ def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS
 
                     # The Diffuse lighting
                     #While i was cleaning up i tried again and it works just fine now???
-                    diffuse = max(interpolated_normal.dot(-light_dir), 0)
+                    diffuse = max(np.dot(interpolated_normal,-light_dir), 0)
 
                     #(What was bui tuong phong on about??)
                     #Calculates reflection direction vector
@@ -704,7 +704,7 @@ def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS
                     #Gamma correction
                     #Also puts intensity in unit range
                     intensity = (intensity / 255.0) ** parameters.GAMMA
-                    intensity = min(intensity, 1.0)*intensities[i]
+                    intensity = min(intensity*intensities[i], 1.0)
 
                     #Final color calculated based on the color of pixel and intensity of pixel
                     #The color of the model is converted to BGR from RGB as well
@@ -719,7 +719,7 @@ def rasterize_phong_textured(coords, view, zbuffer, av_normals, coords_3d,LIGHTS
 #Nontextured Phong shader
 #Has to be separated from textured phong because numba likes being difficult
 @numba.njit()
-def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d,LIGHTS, color = (255,255,255),):
+def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d,LIGHTS,intensities, color = (255,255,255),):
 
     # All 3 2 dimensions coordinates
     A, B, C = coords.astype(np.float32)
@@ -817,7 +817,7 @@ def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d,LIG
 
                     # The Diffuse lighting
                     # While i was cleaning up i tried again and it works just fine now???
-                    diffuse = max(interpolated_normal.dot(-light_dir), 0)
+                    diffuse = max(np.dot(interpolated_normal,-light_dir), 0)
 
                     # (What was bui tuong phong on about??)
                     # Calculates reflection direction vector
@@ -836,7 +836,7 @@ def rasterize_phong_textureless(coords, view, zbuffer, av_normals, coords_3d,LIG
                     # Gamma correction
                     # Also puts intensity in unit range
                     intensity = (intensity / 255.0) ** parameters.GAMMA
-                    intensity = min(intensity, 1.0)
+                    intensity = min(intensity*intensities[i], 1.0)
 
                     # Final color calculated based on the color of pixel and intensity of pixel
                     # The color of the model is converted to BGR from RGB as well

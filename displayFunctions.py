@@ -9,7 +9,8 @@ from lightFunctions import *
 
 
 #Display function for lambertian shading
-def lambertian(model,view,zbuffer,lights):
+def lambertian(model,view,zbuffer,light_info):
+    lights, intensities = light_info
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -28,12 +29,13 @@ def lambertian(model,view,zbuffer,lights):
 
             #Rasterizes
             rasterize_lambertian_textureless(
-                    coords=coords,
-                    view=view,
-                    zbuffer=zbuffer,
-                    coords_3d=face.points,
-                    normal=face.normal,
-                    LIGHTS = lights
+                coords=coords,
+                view=view,
+                zbuffer=zbuffer,
+                coords_3d=face.points,
+                normal=face.normal,
+                LIGHTS = lights,
+                intensities=intensities
 
             )
     elif model.textured:
@@ -54,12 +56,14 @@ def lambertian(model,view,zbuffer,lights):
                 coords_3d=face.points,
                 texturecoords=texture_points,
                 texture=texture,
-                LIGHTS = np.array(lights)
+                LIGHTS = np.array(lights),
+                intensities=intensities
             )
 
 
 #Display function for gouraud shading
-def gouraud(model,view,zbuffer,lights):
+def gouraud(model,view,zbuffer,light_info):
+    lights, intensities = light_info
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -77,12 +81,13 @@ def gouraud(model,view,zbuffer,lights):
 
             #Rasterizes
             rasterize_gouraud_textureless(
-                    coords=coords,
-                    view=view,
-                    zbuffer=zbuffer,
-                    coords_3d=face.points,
-                    normals=face.avNorms,
-                    LIGHTS=lights
+                coords=coords,
+                view=view,
+                zbuffer=zbuffer,
+                coords_3d=face.points,
+                normals=face.avNorms,
+                LIGHTS=lights,
+                intensities=intensities
 
             )
 
@@ -104,7 +109,8 @@ def gouraud(model,view,zbuffer,lights):
                 coords_3d=face.points,
                 texturecoords=texture_points,
                 texture=texture,
-                LIGHTS=lights
+                LIGHTS=lights,
+                intensities=intensities
             )
 
 
@@ -138,6 +144,7 @@ def phong(model,view,zbuffer,light_info):
                     coords_3d=face.points,
                     color=(255,255,255),
                     LIGHTS=lights,
+                    intensities=intensities
             )
 
     #If model is textured
