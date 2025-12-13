@@ -66,7 +66,7 @@ Drag and scroll to rotate and zoom.
 * Add more light options
   * ~~Multiple Lights~~
   * ~~Light intensity~~
-  * Light color
+  * ~~Light color~~
   * Optimize everything
 
 * Add built in recording

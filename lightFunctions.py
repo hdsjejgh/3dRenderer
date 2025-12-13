@@ -12,7 +12,8 @@ def lightRot(axis,deg,index,LInfo_array):
 def lightScale(magnitude,index,LInfo_array):
     LInfo_array[0][index]*=magnitude
 
-def createLight(x,y,z,LInfo_array,intensity=1.0):
+def createLight(x,y,z,LInfo_array,intensity=1.0,color=(1.0,1.0,1.0)):
     l = np.array([x,y,z],dtype=np.float32)
     LInfo_array[0].append(l)
     LInfo_array[1].append(float(intensity))
+    LInfo_array[2].append(np.array(color[::-1],dtype=np.float32))

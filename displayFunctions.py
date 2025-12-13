@@ -10,7 +10,7 @@ from lightFunctions import *
 
 #Display function for lambertian shading
 def lambertian(model,view,zbuffer,light_info):
-    lights, intensities = light_info
+    lights, intensities,colors = light_info
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -35,7 +35,8 @@ def lambertian(model,view,zbuffer,light_info):
                 coords_3d=face.points,
                 normal=face.normal,
                 LIGHTS = lights,
-                intensities=intensities
+                intensities=intensities,
+                colors=colors
 
             )
     elif model.textured:
@@ -57,13 +58,14 @@ def lambertian(model,view,zbuffer,light_info):
                 texturecoords=texture_points,
                 texture=texture,
                 LIGHTS = np.array(lights),
-                intensities=intensities
+                intensities=intensities,
+                colors=colors
             )
 
 
 #Display function for gouraud shading
 def gouraud(model,view,zbuffer,light_info):
-    lights, intensities = light_info
+    lights, intensities,colors = light_info
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -87,7 +89,8 @@ def gouraud(model,view,zbuffer,light_info):
                 coords_3d=face.points,
                 normals=face.avNorms,
                 LIGHTS=lights,
-                intensities=intensities
+                intensities=intensities,
+                colors=colors
 
             )
 
@@ -110,7 +113,8 @@ def gouraud(model,view,zbuffer,light_info):
                 texturecoords=texture_points,
                 texture=texture,
                 LIGHTS=lights,
-                intensities=intensities
+                intensities=intensities,
+                colors=colors
             )
 
 
@@ -119,7 +123,7 @@ def gouraud(model,view,zbuffer,light_info):
 
 #Display function for phong shading
 def phong(model,view,zbuffer,light_info):
-    lights, intensities = light_info
+    lights, intensities,colors = light_info
 
     #Array needed to center points in the display
     #(<0,0> would be shifted to the view's middle)
@@ -142,9 +146,9 @@ def phong(model,view,zbuffer,light_info):
                     zbuffer=zbuffer,
                     av_normals=face.avNorms,
                     coords_3d=face.points,
-                    color=(255,255,255),
                     LIGHTS=lights,
-                    intensities=intensities
+                    intensities=intensities,
+                    colors=colors
             )
 
     #If model is textured
@@ -167,6 +171,7 @@ def phong(model,view,zbuffer,light_info):
                 texturecoords=texture_points,
                 texture=texture,
                 LIGHTS=lights,
-                intensities = intensities
+                intensities = intensities,
+                colors = colors
 
             )

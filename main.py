@@ -1,6 +1,7 @@
 from shapes import *
 from displayFunctions import *
 from lightFunctions import *
+from aa import *
 #-----------------------------------------------#
 
 cv.namedWindow("3d Render")
@@ -51,11 +52,11 @@ def mouse_callback(event, x, y, flags, params):
 
             #Rotations are scaled such that dragging across half the screen rotats the model 90 degrees
 
-            for i in range(len(LIGHTS_INFO)):
+            for i in range(len(LIGHTS_INFO[0])):
                 lightRot('y',(-dx/parameters.WIDTH)*180,i,LIGHTS_INFO)
             Model.rotate('y',(-dx/parameters.WIDTH)*180,selfcc=False)
 
-            for i in range(len(LIGHTS_INFO)):
+            for i in range(len(LIGHTS_INFO[0])):
                 lightRot('x', (dy / parameters.HEIGHT) * 180,i,LIGHTS_INFO)
             Model.rotate('x', (dy / parameters.HEIGHT) * 180,selfcc=False)
 
@@ -66,12 +67,12 @@ def mouse_callback(event, x, y, flags, params):
         #If scrolled up
         if flags>0:
             Model.scale(1.1,[0,0,0])
-            for i in range(len(LIGHTS_INFO)):
+            for i in range(len(LIGHTS_INFO[0])):
                 lightScale(1.1,i,LIGHTS_INFO)
         #If scrolled down
         elif flags<0:
             Model.scale(1/1.1,[0,0,0])
-            for i in range(len(LIGHTS_INFO)):
+            for i in range(len(LIGHTS_INFO[0])):
                 lightScale(1/1.1,i,LIGHTS_INFO)
 
 #Sets up mouse callback function
@@ -81,7 +82,7 @@ cv.setMouseCallback("3d Render",mouse_callback)
 #CHANGE THESE THINGS ##########################################
 
 #Pass this as the light info array in any light creation, editing function
-LIGHTS_INFO =  [[],[]]
+LIGHTS_INFO =  [[],[],[]]
 
 #The model loaded
 Model = OBJ_File("models/Shambler.obj",reverseNormals=True,)#texture="textures/Shambler.png")
@@ -92,8 +93,10 @@ SHADER = phong
 #Transformations to be done to the model before anything
 def pretransformation():
     pass
-    createLight(200,0,0,LIGHTS_INFO,0.25)
-    createLight(-200, 0, 0, LIGHTS_INFO)
+    createLight(0,50,-150,LIGHTS_INFO,1,(1,0,0))
+    createLight(-50, -30, -150, LIGHTS_INFO, 1, (0, 1, 0))
+    createLight(50, -30, -150, LIGHTS_INFO, 1, (0, 0, 1))
+    #createLight(-200, 0, 0, LIGHTS_INFO)
 
     Model.scale(-3)
     #Model.rotate('x',-90)
@@ -106,8 +109,10 @@ def TransformationLoop():
     # Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
     #Model.twist('y', 1, 0.01, center=100)
-    lightRot('y',1,0,LIGHTS_INFO)
-    lightRot('y', 1, 1, LIGHTS_INFO)
+    lightRot('z',1,0,LIGHTS_INFO)
+    lightRot('z', 1, 1, LIGHTS_INFO)
+    lightRot('z', 1, 2, LIGHTS_INFO)
+    #lightRot('y', 1, 1, LIGHTS_INFO)
 
 
 #######################################################
@@ -148,6 +153,7 @@ if __name__ == '__main__':
             zbuffer[origin[1], origin[0]] = 0
 
         intensities = LIGHTS_INFO[1]
+        colors = LIGHTS_INFO[2]
         for i,LIGHT_POS in enumerate(LIGHTS_INFO[0]):
             #Skips light if its behind model
             if LIGHT_POS[2]>parameters.CAMERA_POS[2]:
@@ -164,8 +170,8 @@ if __name__ == '__main__':
                         #Does make said pixels black even when above the model, but its a minor thing, ill fix it later
                         dist = (x-LIGHT2Dx)**2+(y-LIGHT2Dy)**2
                         light_color = intensities[i]*255*.75**(dist/3)
-
-                        view[y, x] = np.clip(view[y, x]+np.array([light_color, light_color, light_color]),a_min=0,a_max=255).astype(np.uint8)
+                        light_color= np.array([light_color, light_color, light_color])*colors[i]
+                        view[y, x] = np.clip(view[y, x]+light_color,a_min=0,a_max=255).astype(np.uint8)
                         zbuffer[y,x] = LIGHT_POS[2]
 
         if parameters.AA=="FXAA":
