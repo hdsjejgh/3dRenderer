@@ -87,7 +87,9 @@ class File(ABC):
 
         self.vnloaded=False
         self.textured=False
+        self.texture = np.empty(shape=(0,0))
         self.valids = []
+        self.texturecoords = []
 
     #Face metaclass defines a face (no way)
     class face:
@@ -209,6 +211,27 @@ class File(ABC):
         return returnFaces
 
 
+    def debug(self):
+        print("-------------------------------------------------------")
+        print(f"""
+        Vertices: {len(self.coords)}
+        Faces: {len(self.faces)}
+        Visible Faces: {len(self.valids)}
+        Center: {self.center}
+        
+        X range: [{np.min(self.coords[:,0])},{np.max(self.coords[:,0])}]
+        Y range: [{np.min(self.coords[:,1])},{np.max(self.coords[:,1])}]
+        Z range: [{np.min(self.coords[:,2])},{np.max(self.coords[:,2])}]
+        
+        Vertex Normals: {self.vnloaded}
+        Textured: {self.textured}
+            """)
+        if self.textured:
+            print(f"""
+        Texture Dimensions: {self.texture.shape[0]}x{self.texture.shape[1]}
+        Texture Coordinates: {len(self.texturecoords)}
+            """)
+        print("-------------------------------------------------------")
 
     #Linear transformations
 

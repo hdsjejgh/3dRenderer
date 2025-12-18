@@ -85,7 +85,7 @@ cv.setMouseCallback("3d Render",mouse_callback)
 LIGHTS_INFO =  [[],[],[]]
 
 #The model loaded
-Model = OBJ_File("models/Shambler.obj",reverseNormals=True,)#texture="textures/Shambler.png")
+Model = OBJ_File("models/Shambler.obj",reverseNormals=True,texture="textures/Shambler.png")
 # Which shader rasterizing function to use
 # All are in the displayFunctions file
 SHADER = phong
@@ -105,7 +105,7 @@ def pretransformation():
 #What transformations to apply to the model every frame
 def TransformationLoop():
     pass
-
+    Model.debug()
     # Model.linear_taper('y',1.00001,0.0001,1.00001,0.0001)
     # Model.twist('x', 1, 0.01, center=100)
     #Model.twist('y', 1, 0.01, center=100)
